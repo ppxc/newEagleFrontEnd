@@ -66,8 +66,13 @@
       </div>
       <div id="heat-map-container" class="map-container">
         <!-- 行政区划按钮（改用字体图标） -->
-        <div class="bottom-in-map" @click="toggleDistricts" title="显示/隐藏行政区划">
-          <ArtSvgIcon icon="ri:grid-line" class="district-icon-btn" />
+        <div
+          class="district-img-btn"
+          :class="{ active: isDistrictsVisible }"
+          @click="toggleDistricts"
+          title="显示/隐藏行政区划"
+        >
+          <ArtSvgIcon icon="ri:grid-line" />
         </div>
       </div>
       <div v-if="loading" class="loading">地图加载中...</div>
@@ -80,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, onBeforeUnmount, ref } from 'vue'
+  import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
   import { AdministrativeRegionManager } from '../../api/AdministrativeRegionmanager'
   import { ElRow, ElCol } from 'element-plus'
   import { hotmap } from '../../api'
@@ -103,6 +108,7 @@
   let administrativeRegionManager: AdministrativeRegionManager | null = null
 
   // 状态
+  const isDistrictsVisible = computed(() => administrativeRegionManager?.showingDistricts.value ?? false)
   const loading = ref(true)
   const error = ref('')
 
@@ -516,26 +522,37 @@
     border-radius: 8px;
   }
 
-  .district-icon-btn {
-    font-size: 20px;
-    pointer-events: none;
-  }
-
   .district-img-btn {
-    /* position: absolute; */
-    width: 25px;
-    height: 25px;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
     cursor: pointer;
-    transition: all 0.25s ease;
-    opacity: 0.85;
-    filter: brightness(0) invert(1);
+    transition: all 0.2s ease;
     flex-shrink: 0;
-    border: 1px solid #9ca3af;
-    /* 添加边框 */
-    border-radius: 4px;
-    /* 可选：添加圆角 */
-    padding: 4px;
-    /* 可选：添加内边距 */
+    background: var(--fs-toolbar-btn-bg);
+    border: 1px solid var(--fs-toolbar-btn-border);
+    border-radius: 8px;
+    color: var(--fs-toolbar-btn-color);
+    font-size: 16px;
+  }
+  .district-img-btn:hover {
+    background: var(--fs-toolbar-btn-hover-bg);
+    border-color: var(--fs-toolbar-btn-hover-border);
+    color: var(--fs-toolbar-btn-hover-color);
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  .district-img-btn.active {
+    background: var(--fs-bg-blue);
+    border-color: var(--fs-accent-border);
+    color: var(--fs-accent);
+    box-shadow: 0 0 10px var(--fs-accent-glow);
   }
 
   .loading,
@@ -571,32 +588,6 @@
     /* 添加底部间距 */
   }
 
-  .bottom-in-map {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    cursor: pointer;
-    background: rgba(59, 130, 246, 0.2);
-    border: 2px solid rgba(59, 130, 246, 0.5);
-    border-radius: 8px;
-    color: #60a5fa;
-    font-size: 20px;
-    transition: all 0.25s ease;
-  }
-  .bottom-in-map:hover {
-    background: rgba(59, 130, 246, 0.4);
-    border-color: #3b82f6;
-    color: #93c5fd;
-    transform: scale(1.1);
-    box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
-  }
-
   .custom-height {
     height: 100px;
   }
@@ -619,6 +610,46 @@
       padding-left: 4px;
       padding-right: 4px;
     }
+  }
+</style>
+
+<!-- 全局 CSS 变量：汛期驾驶舱工具栏按钮同款 -->
+<style>
+  :root {
+    --fs-toolbar-btn-bg: rgba(55, 65, 81, 0.6);
+    --fs-toolbar-btn-border: rgba(156, 163, 175, 0.15);
+    --fs-toolbar-btn-color: #9ca3af;
+    --fs-toolbar-btn-hover-bg: rgba(75, 85, 99, 0.8);
+    --fs-toolbar-btn-hover-border: rgba(156, 163, 175, 0.3);
+    --fs-toolbar-btn-hover-color: #f3f4f6;
+    --fs-bg-blue: rgba(59, 130, 246, 0.2);
+    --fs-accent: #60a5fa;
+    --fs-accent-border: rgba(96, 165, 250, 0.3);
+    --fs-accent-glow: rgba(96, 165, 250, 0.25);
+  }
+  html.dark {
+    --fs-toolbar-btn-bg: rgba(55, 65, 81, 0.6);
+    --fs-toolbar-btn-border: rgba(156, 163, 175, 0.15);
+    --fs-toolbar-btn-color: #9ca3af;
+    --fs-toolbar-btn-hover-bg: rgba(75, 85, 99, 0.8);
+    --fs-toolbar-btn-hover-border: rgba(156, 163, 175, 0.3);
+    --fs-toolbar-btn-hover-color: #f3f4f6;
+    --fs-bg-blue: rgba(59, 130, 246, 0.2);
+    --fs-accent: #60a5fa;
+    --fs-accent-border: rgba(96, 165, 250, 0.3);
+    --fs-accent-glow: rgba(96, 165, 250, 0.25);
+  }
+  html:not(.dark) {
+    --fs-toolbar-btn-bg: rgba(255, 255, 255, 0.8);
+    --fs-toolbar-btn-border: rgba(0, 0, 0, 0.08);
+    --fs-toolbar-btn-color: #6b7280;
+    --fs-toolbar-btn-hover-bg: rgba(59, 130, 246, 0.1);
+    --fs-toolbar-btn-hover-border: rgba(59, 130, 246, 0.25);
+    --fs-toolbar-btn-hover-color: #3b82f6;
+    --fs-bg-blue: rgba(59, 130, 246, 0.08);
+    --fs-accent: #3b82f6;
+    --fs-accent-border: rgba(59, 130, 246, 0.25);
+    --fs-accent-glow: rgba(59, 130, 246, 0.15);
   }
 </style>
 

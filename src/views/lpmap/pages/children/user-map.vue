@@ -1130,22 +1130,23 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: all 0.2s ease;
     flex-shrink: 0;
-    background: var(--ul-home-icon-bg);
-    border: 1px solid var(--ul-home-icon-border);
-    border-radius: 6px;
-    color: var(--ul-home-icon-color);
-    font-size: 18px;
+    background: var(--fs-toolbar-btn-bg);
+    border: 1px solid var(--fs-toolbar-btn-border);
+    border-radius: 8px;
+    color: var(--fs-toolbar-btn-color);
+    font-size: 16px;
   }
   .home-icon-btn:hover {
-    background: var(--ul-home-icon-hover-bg);
-    border-color: var(--ul-home-icon-hover-border);
-    color: var(--ul-home-icon-hover-color);
-    transform: scale(1.08);
+    background: var(--fs-toolbar-btn-hover-bg);
+    border-color: var(--fs-toolbar-btn-hover-border);
+    color: var(--fs-toolbar-btn-hover-color);
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   .district-and-home-btns {
@@ -1583,5 +1584,43 @@
   .user-map-container .user-list-scroll::-webkit-scrollbar-thumb,
   .user-map-container .detail-path-list::-webkit-scrollbar-thumb {
     border-radius: 10px !important;
+  }
+
+  /* 工具栏按钮 CSS 变量（汛期驾驶舱同款） */
+  :root {
+    --fs-toolbar-btn-bg: rgba(55, 65, 81, 0.6);
+    --fs-toolbar-btn-border: rgba(156, 163, 175, 0.15);
+    --fs-toolbar-btn-color: #9ca3af;
+    --fs-toolbar-btn-hover-bg: rgba(75, 85, 99, 0.8);
+    --fs-toolbar-btn-hover-border: rgba(156, 163, 175, 0.3);
+    --fs-toolbar-btn-hover-color: #f3f4f6;
+    --fs-bg-blue: rgba(59, 130, 246, 0.2);
+    --fs-accent: #60a5fa;
+    --fs-accent-border: rgba(96, 165, 250, 0.3);
+    --fs-accent-glow: rgba(96, 165, 250, 0.25);
+  }
+  html.dark {
+    --fs-toolbar-btn-bg: rgba(55, 65, 81, 0.6);
+    --fs-toolbar-btn-border: rgba(156, 163, 175, 0.15);
+    --fs-toolbar-btn-color: #9ca3af;
+    --fs-toolbar-btn-hover-bg: rgba(75, 85, 99, 0.8);
+    --fs-toolbar-btn-hover-border: rgba(156, 163, 175, 0.3);
+    --fs-toolbar-btn-hover-color: #f3f4f6;
+    --fs-bg-blue: rgba(59, 130, 246, 0.2);
+    --fs-accent: #60a5fa;
+    --fs-accent-border: rgba(96, 165, 250, 0.3);
+    --fs-accent-glow: rgba(96, 165, 250, 0.25);
+  }
+  html:not(.dark) {
+    --fs-toolbar-btn-bg: rgba(255, 255, 255, 0.8);
+    --fs-toolbar-btn-border: rgba(0, 0, 0, 0.08);
+    --fs-toolbar-btn-color: #6b7280;
+    --fs-toolbar-btn-hover-bg: rgba(59, 130, 246, 0.1);
+    --fs-toolbar-btn-hover-border: rgba(59, 130, 246, 0.25);
+    --fs-toolbar-btn-hover-color: #3b82f6;
+    --fs-bg-blue: rgba(59, 130, 246, 0.08);
+    --fs-accent: #3b82f6;
+    --fs-accent-border: rgba(59, 130, 246, 0.25);
+    --fs-accent-glow: rgba(59, 130, 246, 0.15);
   }
 </style>

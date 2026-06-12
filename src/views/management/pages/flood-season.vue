@@ -1673,7 +1673,7 @@
   /* ===== 空态 ===== */
   .items-empty {
     height: 100%;
-    min-height: 120px;
+    min-height: 125px;
     display: flex;
     align-items: center;
     justify-content: center;
