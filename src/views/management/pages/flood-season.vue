@@ -23,7 +23,7 @@
     </div>
 
     <!-- ==================== 左 + 右 主体 ==================== -->
-    <div class="cockpit-body" ref="cockpitBodyRef">
+    <div class="cockpit-body">
       <!-- ============ 左侧 60% ============ -->
       <div class="left-col">
         <!-- 5 张占位统计卡片 -->
@@ -151,7 +151,7 @@
             <span class="block-title">值班信息</span>
             <span class="block-date">{{ todayDate }}</span>
           </div>
-          <div class="zhiban-cards" :style="{ height: zhibanTableHeight + 'px' }">
+          <div class="zhiban-cards">
             <div v-if="zhibans.length === 0" class="zhiban-empty">今日暂无值班信息</div>
             <div v-else class="zhiban-card" v-for="(z, idx) in zhibans" :key="idx">
               <div class="zhiban-card-left">
@@ -172,7 +172,7 @@
           <div class="block-header">
             <span class="block-title">数据报表</span>
           </div>
-          <div class="report-cards" :style="{ height: reportTableHeight + 'px' }">
+          <div class="report-cards">
             <div v-if="reportTableData.length === 0" class="report-empty">暂无报表数据</div>
             <div v-else class="report-scroll">
               <div v-for="(row, idx) in reportTableData" :key="idx" class="report-card">
@@ -215,7 +215,7 @@
         <div class="right-block tabs-block">
           <ElTabs v-model="activeTab" class="rain-tabs">
             <ElTabPane label="物资" name="items">
-              <div class="items-list" :style="{ height: tabsTableHeight + 'px' }">
+              <div class="items-list">
                 <div v-if="items.length === 0" class="items-empty">暂无物资数据</div>
                 <div v-else class="items-rows">
                   <div v-for="item in items" :key="item.id" class="items-card">
@@ -271,7 +271,7 @@
               </div>
             </ElTabPane>
             <ElTabPane label="施救单位" name="repair">
-              <div class="cards-list" :style="{ height: tabsTableHeight + 'px' }">
+              <div class="cards-list">
                 <div v-if="repairs.length === 0" class="items-empty">暂无施救单位数据</div>
                 <div v-else class="cards-scroll">
                   <div v-for="r in repairs" :key="r.id" class="rescue-card">
@@ -302,7 +302,7 @@
               </div>
             </ElTabPane>
             <ElTabPane label="中心对口联络机制" name="lianluo">
-              <div class="cards-list" :style="{ height: tabsTableHeight + 'px' }">
+              <div class="cards-list">
                 <div v-if="lianluos.length === 0" class="items-empty">暂无联络机制数据</div>
                 <div v-else class="cards-scroll">
                   <div v-for="(l, idx) in lianluos" :key="idx" class="liaison-card">
@@ -341,31 +341,10 @@
 
   defineOptions({ name: 'FloodSeasonCockpit' })
 
-  // 高度自适应：扣除顶栏 + 面包屑/页头后剩余可用高度
+  // 高度自适应：扣除顶栏 + 面包屑/页头后剩余可用高度，作为最小高度
+  // 内容由 CSS flex 比例（22/35/43）自然填充右侧三表；左侧 flex:1 地图自动跟随
+  // 左右两列在父级 .cockpit-body（display:flex）中自动等高 → 底部始终对齐，无 JS 测量
   const { containerMinHeight } = useAutoLayoutHeight()
-
-  // 主体容器实际高度（不绑定响应式 ResizeObserver，避免 loop 告警）
-  // 用 cockpit-body 作为高度源，两表瓜分该高度，避免相互撑高
-  const cockpitBodyRef = ref<HTMLElement>()
-  const cockpitBodyHeight = ref(0)
-  const measureCockpitBody = () => {
-    requestAnimationFrame(() => {
-      cockpitBodyHeight.value = cockpitBodyRef.value?.clientHeight || 0
-    })
-  }
-  // 右侧三表：平分右侧可用高度，三表总高与左侧地图底部对齐
-  const ZHIBAN_MAX = 80
-  const REPORT_TABLE_MAX = 180
-  const TABS_MAX = 200
-  const zhibanTableHeight = computed(() =>
-    Math.min(ZHIBAN_MAX, Math.max(80, Math.floor(cockpitBodyHeight.value * 0.22)))
-  )
-  const reportTableHeight = computed(() =>
-    Math.min(REPORT_TABLE_MAX, Math.max(140, Math.floor(cockpitBodyHeight.value * 0.35)))
-  )
-  const tabsTableHeight = computed(() =>
-    Math.min(TABS_MAX, Math.max(120, Math.floor(cockpitBodyHeight.value * 0.35)))
-  )
 
   // ==================== 类型 ====================
   interface DayLevel {
@@ -796,9 +775,6 @@
   onMounted(() => {
     initMap()
     fetchAll()
-    // 初次测量 + 监听窗口缩放，避免 ResizeObserver 循环
-    measureCockpitBody()
-    window.addEventListener('resize', measureCockpitBody)
   })
 
   onBeforeUnmount(() => {
@@ -811,25 +787,25 @@
       map.destroy()
       map = null
     }
-    window.removeEventListener('resize', measureCockpitBody)
   })
 </script>
 
 <style scoped>
   .flood-cockpit {
     width: 100%;
-    height: 100%;
+    height: auto; /* 由 :style.height 精确控制为 viewport - 头 - footer，避免被 100vh 撑得过高 */
     min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    overflow: hidden;
+    /* 由 :style.minHeight 保证至少 100vh-头；overflow:visible 允许内容超出时出现滚动条 */
+    overflow: visible;
   }
 
   /* ==================== 标题 ==================== */
   .cockpit-title {
     margin: 0;
-    padding: 14px 0;
+    padding: 10px 0;
     text-align: center;
     font-size: 22px;
     font-weight: 600;
@@ -848,9 +824,11 @@
   .cockpit-body {
     flex: 1;
     display: flex;
+    align-items: stretch; /* 两列强制等高 → 地图底部与右侧表格底部自动对齐 */
     gap: 10px;
     min-height: 0;
-    overflow: hidden;
+    max-height: 75vh;
+    /* overflow 由子列 .left-col/.right-col 各自管理 */
   }
 
   .left-col,
@@ -859,16 +837,25 @@
     flex-direction: column;
     gap: 10px;
     min-height: 0;
-    height: 100%;
+    /* 不设 height:100% —— 父级 align-items:stretch 已保证两列等高；
+       height:100% 在父级无 definite size 时会退化为 auto，导致两列各自按内容撑高、底部错位 */
     overflow: hidden;
   }
 
+  /* 让右侧最底下的 .tabs-block 与 .right-col 底部之间有 10px 间距，
+     对应左侧 .map-wrapper 的 margin-bottom: 10px（地图底部到 .left-col 底部），两侧底部对齐且呼吸感一致 */
+  .right-col {
+    padding-bottom: 10px;
+  }
+
   .left-col {
-    flex: 0 0 60%;
+    flex: 1 1 60%; /* 维持左 60% 比例；flex:1 让两列在父容器 .cockpit-body 内等高 */
+    min-width: 0;
   }
 
   .right-col {
-    flex: 0 0 calc(40% - 10px);
+    flex: 1 1 calc(40% - 10px); /* 维持右 40% 比例（含一个 gap） */
+    min-width: 0;
   }
 
   /* ==================== 卡片 ==================== */
@@ -919,7 +906,7 @@
 
   .map-container {
     width: 100%;
-    height: 65vh;
+    height: 100%; /* 跟随 .map-wrapper（flex:1 撑满），不再用 65vh，与右侧三表底部对齐 */
     border-radius: 8px;
     position: relative;
     transition: all 0.3s ease;
@@ -1245,11 +1232,7 @@
     min-height: 0;
   }
 
-  /* 第二个 right-block（tabs 区）固定高度，不撑满 */
-  .tabs-block {
-    flex: 0 0 auto;
-    min-height: 0;
-  }
+  /* 第二个 right-block 被上方的统一 .tabs-block 规则覆盖，此处删除 */
 
   .rain-tabs {
     height: 100%;
@@ -1268,21 +1251,38 @@
   }
   .rain-tabs :deep(.el-tab-pane) {
     height: 100%;
-  }
-
-  .tab-content {
-    height: 100%;
-    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* 约束子元素，迫使 .items-list/.cards-list 的 overflow-y:auto 生效 */
   }
 
   /* ==================== 表格区 ==================== */
 
-  /* 值班表：固定高度（由 :height 动态计算），列头吸顶 + 内部滚动由 el-table 自身管理 */
+  /* 三表高度由 flex 比例自然瓜分 right-col 剩余空间（总计 22+35+43=100）
+     与左侧地图共享 .cockpit-body 等高容器 → 底部自动对齐
+     max-height 防止大屏下表无限拉长，触及上限后多余空间留在 right-col 底部 */
   .zhiban-block {
-    flex: 0 0 auto;
-    min-height: 0;
+    flex: 22; /* 22% */
+    min-height: 125px;
+    max-height: 125px; /* 值班信息内容少，固定 125px */
+    overflow: hidden;
   }
 
+  /* 数据报表：35% */
+  .report-block {
+    flex: 35;
+    min-height: 140px;
+    max-height: 220px;
+    overflow: hidden;
+  }
+
+  /* Tab 表：43% */
+  .tabs-block {
+    flex: 43;
+    min-height: 120px;
+    max-height: 300px;
+    overflow: hidden;
+  }
   .block-header {
     display: flex;
     align-items: center;
@@ -1305,6 +1305,8 @@
   }
 
   .zhiban-cards {
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -1354,18 +1356,6 @@
     font-size: 15px;
     color: var(--fs-text-primary);
     font-weight: 600;
-  }
-
-  /* 数据报表：固定高度 */
-  .report-block {
-    flex: 0 0 auto;
-    min-height: 0;
-  }
-
-  /* Tab 表：固定高度，由 :height 控制 */
-  .tabs-block {
-    flex: 0 0 auto;
-    min-height: 0;
   }
 
   /* ==================== ElTable 暗色主题（Tab 1/2）==================== */
@@ -1470,6 +1460,8 @@
 
   /* ==================== Tab 物资 - 卡片式列表 ==================== */
   .items-list {
+    flex: 1;
+    min-height: 0;
     background: var(--fs-bg-inner-light);
     border: 0.5px solid var(--fs-border-medium);
     border-radius: 8px;
@@ -1691,6 +1683,8 @@
 
   /* ==================== 数据报表卡片 ==================== */
   .report-cards {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--fs-bg-inner-light);
@@ -1797,6 +1791,8 @@
 
   /* ==================== 施救单位卡片 ==================== */
   .cards-list {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--fs-bg-inner-light);
