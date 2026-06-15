@@ -79,3 +79,27 @@ export const accidentYearLossRate = {
     return request.get({ url: '/zyxt/api/pflsgn_xny/list', params })
   }
 }
+
+// ==================== 工作量趋势钻取 ====================
+export const workloadTrend = {
+  /** 部门级工作量趋势 */
+  axiosRequestDepartmentWorkload(params) {
+    return request.get({ url: '/zyxt/api/workload/department', params })
+  },
+  /** 小组级工作量趋势 */
+  axiosRequestGroupWorkload(params) {
+    return request.get({ url: '/zyxt/api/workload/group', params })
+  },
+  /** 员工级工作量趋势 */
+  axiosRequestEmployeeWorkload(params) {
+    return request.get({ url: '/zyxt/api/workload/employee', params })
+  },
+  /** 根据部门名称获取编码 */
+  axiosRequestComCodeByName(params) {
+    return request.get({ url: '/zyxt/api/workload/comcode', params })
+  },
+  /** 根据小组名称获取编码 */
+  axiosRequestGroupsCodeByName(params) {
+    return request.get({ url: '/zyxt/api/workload/groupscode', params })
+  }
+}

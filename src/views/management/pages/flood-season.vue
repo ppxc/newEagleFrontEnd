@@ -5,17 +5,11 @@
 
     <!-- ==================== 气象信息滚动 ==================== -->
     <div class="scroll-bar">
-      <ArtTextScroll
-        direction="left"
-        :speed="50"
-        :type="scrollBarType"
-      >
+      <ArtTextScroll direction="left" :speed="50" :type="scrollBarType">
         <template v-if="dayLevelsData.length">
-          <span
-            v-for="(d, i) in dayLevelsData"
-            :key="i"
-            :class="getRankClass(d.warning)"
-          >【{{ d.rank || '等级待定' }}】 {{ d.warning || '' }} — {{ d.meteor || '' }}</span>
+          <span v-for="(d, i) in dayLevelsData" :key="i" :class="getRankClass(d.warning)"
+            >【{{ d.rank || '等级待定' }}】 {{ d.warning || '' }} — {{ d.meteor || '' }}</span
+          >
           <!-- <span v-for="(d, i) in dayLevelsData" :key="'sep' + i"> </span> -->
         </template>
         <span v-else>今日暂无气象预警信息</span>
@@ -80,8 +74,11 @@
                 </span>
               </div>
 
-              <div class="place-panel-body" v-show="!isPlacePanelCollapsed"
-                :style="{ '--scrollbar-danger-color': scrollbarDangerColor }">
+              <div
+                class="place-panel-body"
+                v-show="!isPlacePanelCollapsed"
+                :style="{ '--scrollbar-danger-color': scrollbarDangerColor }"
+              >
                 <div v-if="processes.length === 0" class="place-empty">今日暂无预警措施</div>
                 <div v-else class="process-list" ref="processListRef">
                   <div class="process-scroll-inner" :class="{ 'scroll-active': needsScroll }">
@@ -632,17 +629,25 @@
   }
 
   // 计算最高预警等级，决定滚动条容器颜色（对应 ArtTextScroll type 主题）
-  type ThemeType = 'theme' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' | 'danger'
+  type ThemeType =
+    | 'theme'
+    | 'primary'
+    | 'secondary'
+    | 'error'
+    | 'info'
+    | 'success'
+    | 'warning'
+    | 'danger'
   const scrollBarType = computed<ThemeType>(() => {
-    if (!dayLevelsData.value.length) return 'success'                  // 无预警：绿色
-    if (dayLevelsData.value.some((d) => (d.warning || '').includes('红色'))) return 'danger'   // 红色
-    if (dayLevelsData.value.some((d) => (d.warning || '').includes('橙色'))) return 'warning'  // 黄色
-    if (dayLevelsData.value.some((d) => (d.warning || '').includes('黄色'))) return 'warning'  // 黄色
-    if (dayLevelsData.value.some((d) => (d.warning || '').includes('蓝色'))) return 'secondary'     // 蓝色
+    if (!dayLevelsData.value.length) return 'success' // 无预警：绿色
+    if (dayLevelsData.value.some((d) => (d.warning || '').includes('红色'))) return 'danger' // 红色
+    if (dayLevelsData.value.some((d) => (d.warning || '').includes('橙色'))) return 'warning' // 黄色
+    if (dayLevelsData.value.some((d) => (d.warning || '').includes('黄色'))) return 'warning' // 黄色
+    // if (dayLevelsData.value.some((d) => (d.warning || '').includes('蓝色'))) return 'secondary' // 蓝色
     return 'success'
   })
 
-   // ==================== 地图初始化 ====================
+  // ==================== 地图初始化 ====================
   const initMap = async () => {
     try {
       await mapLoader.loadMapApi()
@@ -660,12 +665,18 @@
       })
 
       // 阻止地图容器上的 wheel 冒泡到地图（地图会用它缩放）
-      container.addEventListener('wheel', (e) => {
-        const panel = document.querySelector('.flood-place-panel .place-panel-body') as HTMLElement
-        if (panel && panel.contains(e.target as Node)) {
-          e.preventDefault()
-        }
-      }, { capture: true, passive: false })
+      container.addEventListener(
+        'wheel',
+        (e) => {
+          const panel = document.querySelector(
+            '.flood-place-panel .place-panel-body'
+          ) as HTMLElement
+          if (panel && panel.contains(e.target as Node)) {
+            e.preventDefault()
+          }
+        },
+        { capture: true, passive: false }
+      )
 
       // 点击地图空白处关闭停车场详情
       map.on('click', () => {
@@ -1183,8 +1194,12 @@
   }
 
   @keyframes scroll-up {
-    0%   { transform: translateY(0); }
-    100% { transform: translateY(-50%); }
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(-50%);
+    }
   }
 
   .process-item {
@@ -1998,11 +2013,25 @@
   }
 
   /* ==================== 预警等级颜色 ==================== */
-  .rank-red    { color: var(--fs-red)       !important; font-weight: 700; }
-  .rank-orange { color: var(--fs-orange)    !important; font-weight: 700; }
-  .rank-yellow { color: var(--fs-yellow)    !important; font-weight: 600; }
-  .rank-blue   { color: var(--fs-blue-badge) !important; font-weight: 500; }
-  .rank-default{ color: var(--fs-success) !important; }
+  .rank-red {
+    color: var(--fs-red) !important;
+    font-weight: 700;
+  }
+  .rank-orange {
+    color: var(--fs-orange) !important;
+    font-weight: 700;
+  }
+  .rank-yellow {
+    color: var(--fs-yellow) !important;
+    font-weight: 600;
+  }
+  .rank-blue {
+    color: var(--fs-blue-badge) !important;
+    font-weight: 500;
+  }
+  .rank-default {
+    color: var(--fs-success) !important;
+  }
 </style>
 
 <style>
