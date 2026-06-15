@@ -139,6 +139,16 @@ export const efficiencyRoutes: AppRouteRecord = {
                 keepAlive: false,
                 roles: ['R_USER', 'R_ADMIN', 'R_SUPER']
               }
+            },
+            {
+              path: 'workload-drill',
+              name: 'WorkloadDrill',
+              component: '/efficiency/operations/pages/workload/WorkloadDrillChart',
+              meta: {
+                title: '工作量钻取图',
+                keepAlive: false,
+                roles: ['R_ADMIN', 'R_SUPER']
+              }
             }
           ]
         }
