@@ -253,6 +253,54 @@
       "carCockpit": "Auto Insurance Cockpit",
       "nonCarCockpit": "Non-Auto Insurance Cockpit"
     },
+    "efficiency": {
+      "title": "Data Reports",
+      "operations": {
+        "title": "Operations Efficiency",
+        "byQuantity": {
+          "title": "By-Quantity Compensation"
+        },
+        "claimCycle": {
+          "title": "Claim Cycle"
+        },
+        "closeRate": {
+          "title": "Close Rate"
+        },
+        "daily": {
+          "title": "Daily Report"
+        }
+      },
+      "costControl": {
+        "title": "Cost Control",
+        "zhpfl": {
+          "title": "Comprehensive Payout Ratio"
+        },
+        "pflsgn": {
+          "title": "Accident-Year Payout Ratio"
+        },
+        "policyYear": {
+          "title": "Policy-Year Payout Ratio"
+        },
+        "carAvgLoss": {
+          "title": "Car-Average Loss"
+        },
+        "repairShop": {
+          "title": "Repair Shop"
+        },
+        "anjun": {
+          "title": "Average Claim Per Case"
+        }
+      },
+      "laoxiao": {
+        "title": "Labor Efficiency Monitoring",
+        "yearMonth": {
+          "title": "Yearly-Monthly"
+        },
+        "monthDay": {
+          "title": "Monthly-Daily"
+        }
+      }
+    },
     "result": {
       "title": "Result Page",
       "success": "Success",

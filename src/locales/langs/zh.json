@@ -252,10 +252,10 @@
       "hotmap": "案件量热图"
     },
     "management": {
-      "title": "管理驾驶舱",
-      "carCockpit": "车险驾驶舱",
-      "nonCarCockpit": "非车险驾驶舱",
-      "floodSeason": "汛期驾驶舱"
+      "title": "数智平台",
+      "carCockpit": "车险可视化平台",
+      "nonCarCockpit": "非车可视化平台",
+      "floodSeason": "汛期可视化平台"
     },
     "cost": {
       "title": "成本监控"
@@ -270,6 +270,9 @@
       },
       "operations": {
         "title": "运营效率",
+        "byQuantity": {
+          "title": "按量赔款"
+        },
         "claimCycle": {
           "title": "理赔周期"
         },
@@ -288,8 +291,59 @@
         "pflsgn": {
           "title": "事故年赔付率"
         },
+        "policyYear": {
+          "title": "保单年赔付率"
+        },
+        "carAvgLoss": {
+          "title": "车均定损"
+        },
+        "repairShop": {
+          "title": "维修单位"
+        },
         "anjun": {
           "title": "案均赔款"
+        }
+      },
+      "laoxiao": {
+        "title": "劳效监控",
+        "yearMonth": {
+          "title": "年度-每月"
+        },
+        "monthDay": {
+          "title": "月度-每天"
+        },
+        "workloadYearMonth": {
+          "title": "年度工作量-每月"
+        },
+        "workloadMonthDay": {
+          "title": "月度工作量-每天"
+        },
+        "chakanYear": {
+          "title": "查勘量"
+        },
+        "dingsunTjlYear": {
+          "title": "定损提交量"
+        },
+        "dingsunWclYear": {
+          "title": "定损完成量"
+        },
+        "ckDswcYear": {
+          "title": "查勘量+定损完成"
+        },
+        "dingsunZflYear": {
+          "title": "定损支付量"
+        },
+        "lisuanYear": {
+          "title": "理算量"
+        },
+        "rsGzlYear": {
+          "title": "人伤跟踪量"
+        },
+        "rsTjlYear": {
+          "title": "人伤调解量"
+        },
+        "chakanMonth": {
+          "title": "查勘量"
         }
       }
     },

@@ -19,6 +19,17 @@ export const efficiencyRoutes: AppRouteRecord = {
         keepAlive: false
       },
       children: [
+        // ==================== 按量赔款 ====================
+        {
+          path: 'anliang_peikuan',
+          name: 'AnliangPeikuan',
+          component: '/efficiency/operations/pages/anliang_peikuan',
+          meta: {
+            title: 'menus.efficiency.operations.byQuantity.title',
+            keepAlive: false,
+            roles: ['R_ADMIN', 'R_SUPER']
+          }
+        },
         // ==================== 理赔周期 ====================
         {
           path: 'claim_cycle',
@@ -140,16 +151,6 @@ export const efficiencyRoutes: AppRouteRecord = {
                 roles: ['R_USER', 'R_ADMIN', 'R_SUPER']
               }
             },
-            {
-              path: 'workload_drill',
-              name: 'WorkloadDrill',
-              component: '/efficiency/operations/pages/workload/WorkloadDrillChart',
-              meta: {
-                title: '工作量钻取图',
-                keepAlive: false,
-                roles: ['R_ADMIN', 'R_SUPER']
-              }
-            }
           ]
         }
       ]
@@ -260,6 +261,182 @@ export const efficiencyRoutes: AppRouteRecord = {
               component: '/efficiency/costcontrol/pages/anjun_cx_xny',
               meta: {
                 title: '案均赔款-新能源（车险）',
+                keepAlive: false,
+                roles: ['R_ADMIN', 'R_SUPER']
+              }
+            }
+          ]
+        },
+        // ==================== 保单年赔付率 ====================
+        {
+          path: 'baodannian_pfl',
+          name: 'BaodannianPfl',
+          component: '/efficiency/costcontrol/pages/baodannian_pfl',
+          meta: {
+            title: 'menus.efficiency.costControl.policyYear.title',
+            keepAlive: false,
+            roles: ['R_ADMIN', 'R_SUPER']
+          }
+        },
+        // ==================== 车均定损 ====================
+        {
+          path: 'chejun_dingsun',
+          name: 'ChejunDingsun',
+          component: '/efficiency/costcontrol/pages/chejun_dingsun',
+          meta: {
+            title: 'menus.efficiency.costControl.carAvgLoss.title',
+            keepAlive: false,
+            roles: ['R_ADMIN', 'R_SUPER']
+          }
+        },
+        // ==================== 维修单位 ====================
+        {
+          path: 'weixiu_danwei',
+          name: 'WeixiuDanwei',
+          component: '/efficiency/costcontrol/pages/weixiu_danwei',
+          meta: {
+            title: 'menus.efficiency.costControl.repairShop.title',
+            keepAlive: false,
+            roles: ['R_ADMIN', 'R_SUPER']
+          }
+        }
+      ]
+    },
+    // ==================== 劳效监控 ====================
+    {
+      path: 'laoxiao',
+      name: 'Laoxiao',
+      meta: {
+        title: 'menus.efficiency.laoxiao.title',
+        keepAlive: false
+      },
+      children: [
+        // ==================== 年度-每月 ====================
+        {
+          path: 'year_month',
+          name: 'YearMonth',
+          meta: {
+            title: 'menus.efficiency.laoxiao.yearMonth.title',
+            keepAlive: false
+          },
+          children: [
+            // {
+            //   path: 'workload_year_month',
+            //   name: 'WorkloadYearMonth',
+            //   component: '/efficiency/operations/pages/workload/workload_year_month',
+            //   meta: {
+            //     title: 'menus.efficiency.laoxiao.workloadYearMonth.title',
+            //     keepAlive: false,
+            //     roles: ['R_ADMIN', 'R_SUPER']
+            //   }
+            // },
+            {
+              path: 'chakan_year',
+              name: 'ChakanYear',
+              component: '/efficiency/laoxiao/pages/chakan_year',
+              meta: {
+                title: 'menus.efficiency.laoxiao.chakanYear.title',
+                keepAlive: false,
+                roles: ['R_ADMIN', 'R_SUPER']
+              }
+            },
+            {
+              path: 'dingsun_tjl_year',
+              name: 'DingsunTjlYear',
+              component: '/efficiency/laoxiao/pages/dingsun_tjl_year',
+              meta: {
+                title: 'menus.efficiency.laoxiao.dingsunTjlYear.title',
+                keepAlive: false,
+                roles: ['R_ADMIN', 'R_SUPER']
+              }
+            },
+            {
+              path: 'dingsun_wcl_year',
+              name: 'DingsunWclYear',
+              component: '/efficiency/laoxiao/pages/dingsun_wcl_year',
+              meta: {
+                title: 'menus.efficiency.laoxiao.dingsunWclYear.title',
+                keepAlive: false,
+                roles: ['R_ADMIN', 'R_SUPER']
+              }
+            },
+            {
+              path: 'ck_dswc_year',
+              name: 'CkDswcYear',
+              component: '/efficiency/laoxiao/pages/ck_dswc_year',
+              meta: {
+                title: 'menus.efficiency.laoxiao.ckDswcYear.title',
+                keepAlive: false,
+                roles: ['R_ADMIN', 'R_SUPER']
+              }
+            },
+            {
+              path: 'dingsun_zfl_year',
+              name: 'DingsunZflYear',
+              component: '/efficiency/laoxiao/pages/dingsun_zfl_year',
+              meta: {
+                title: 'menus.efficiency.laoxiao.dingsunZflYear.title',
+                keepAlive: false,
+                roles: ['R_ADMIN', 'R_SUPER']
+              }
+            },
+            {
+              path: 'lisuan_year',
+              name: 'LisuanYear',
+              component: '/efficiency/laoxiao/pages/lisuan_year',
+              meta: {
+                title: 'menus.efficiency.laoxiao.lisuanYear.title',
+                keepAlive: false,
+                roles: ['R_ADMIN', 'R_SUPER']
+              }
+            },
+            {
+              path: 'rs_gzl_year',
+              name: 'RsGzlYear',
+              component: '/efficiency/laoxiao/pages/rs_gzl_year',
+              meta: {
+                title: 'menus.efficiency.laoxiao.rsGzlYear.title',
+                keepAlive: false,
+                roles: ['R_ADMIN', 'R_SUPER']
+              }
+            },
+            {
+              path: 'rs_tjl_year',
+              name: 'RsTjlYear',
+              component: '/efficiency/laoxiao/pages/rs_tjl_year',
+              meta: {
+                title: 'menus.efficiency.laoxiao.rsTjlYear.title',
+                keepAlive: false,
+                roles: ['R_ADMIN', 'R_SUPER']
+              }
+            }
+          ]
+        },
+        // ==================== 月度-每天 ====================
+        {
+          path: 'month_day',
+          name: 'MonthDay',
+          meta: {
+            title: 'menus.efficiency.laoxiao.monthDay.title',
+            keepAlive: false
+          },
+          children: [
+            // {
+            //   path: 'workload_month_day',
+            //   name: 'WorkloadMonthDay',
+            //   component: '/efficiency/operations/pages/workload/workload_month_day',
+            //   meta: {
+            //     title: 'menus.efficiency.laoxiao.workloadMonthDay.title',
+            //     keepAlive: false,
+            //     roles: ['R_ADMIN', 'R_SUPER']
+            //   }
+            // },
+            {
+              path: 'chakan_month',
+              name: 'ChakanMonth',
+              component: '/efficiency/laoxiao/pages/chakan_month',
+              meta: {
+                title: 'menus.efficiency.laoxiao.chakanMonth.title',
                 keepAlive: false,
                 roles: ['R_ADMIN', 'R_SUPER']
               }

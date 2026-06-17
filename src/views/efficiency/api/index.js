@@ -45,6 +45,42 @@ export const dataReport = {
   /** 车险结案率-人员 */
   axiosRequestPacllRy(params) {
     return request.get({ url: '/zyxt/api/pacll_ry/list', params })
+  },
+  /** 查勘量-年度每月 */
+  axiosRequestChakanYear(params) {
+    return request.get({ url: '/zyxt/api/chakan_year/list', params })
+  },
+  /** 定损提交量-年度每月 */
+  axiosRequestDingsunTjlYear(params) {
+    return request.get({ url: '/zyxt/api/dingsun_tjl_year/list', params })
+  },
+  /** 定损完成量-年度每月 */
+  axiosRequestDingsunWclYear(params) {
+    return request.get({ url: '/zyxt/api/dingsun_wcl_year/list', params })
+  },
+  /** 查勘量+定损完成-年度每月 */
+  axiosRequestCkDswcYear(params) {
+    return request.get({ url: '/zyxt/api/ck_dswc_year/list', params })
+  },
+  /** 定损支付量-年度每月 */
+  axiosRequestDingsunZflYear(params) {
+    return request.get({ url: '/zyxt/api/dingsun_zfl_year/list', params })
+  },
+  /** 理算量-年度每月 */
+  axiosRequestLisuanYear(params) {
+    return request.get({ url: '/zyxt/api/lisuan_year/list', params })
+  },
+  /** 人伤跟踪量-年度每月 */
+  axiosRequestRsGzlYear(params) {
+    return request.get({ url: '/zyxt/api/rs_gzl_year/list', params })
+  },
+  /** 人伤调解量-年度每月 */
+  axiosRequestRsTjlYear(params) {
+    return request.get({ url: '/zyxt/api/rs_tjl_year/list', params })
+  },
+  /** 查勘量-月度每日 */
+  axiosRequestChakanMonth(params) {
+    return request.get({ url: '/zyxt/api/chakan_month/list', params })
   }
 }
 
