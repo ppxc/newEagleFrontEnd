@@ -209,9 +209,9 @@
   import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
   import { useSettingStore } from '@/store/modules/setting'
   import { storeToRefs } from 'pinia'
-  import { AdministrativeRegionManager } from '../../api/AdministrativeRegionmanager'
+  import { AdministrativeRegionManager } from '../../api/administrativeregionmanager'
   import { personalmap } from '../../api'
-  import { MapLoader } from '../../api/mapLoader'
+  import { MapLoader } from '../../api/maploader'
   const settingStore = useSettingStore()
   const { isDark } = storeToRefs(settingStore)
   // import { LogService } from '../../../../api/logServices'

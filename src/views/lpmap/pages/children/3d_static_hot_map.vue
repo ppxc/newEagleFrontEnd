@@ -122,10 +122,10 @@
 <script setup lang="ts">
   import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
   import { useSettingStore } from '@stores/modules/setting'
-  import { AdministrativeRegionManager } from '../../api/AdministrativeRegionmanager'
+  import { AdministrativeRegionManager } from '../../api/administrativeregionmanager'
   import { ElRow, ElCol } from 'element-plus'
   import { hotmap } from '../../api'
-  import { MapLoader } from '../../api/mapLoader'
+  import { MapLoader } from '../../api/maploader'
 
   // import LogService from '@/services/logServices'
   // const VITE_API_PROXY_PORT_URL = import.meta.env.VITE_API_PROXY_PORT_URL
