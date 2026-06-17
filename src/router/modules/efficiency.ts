@@ -21,7 +21,7 @@ export const efficiencyRoutes: AppRouteRecord = {
       children: [
         // ==================== 理赔周期 ====================
         {
-          path: 'claim-cycle',
+          path: 'claim_cycle',
           name: 'ClaimCycle',
           meta: {
             title: 'menus.efficiency.operations.claimCycle.title',
@@ -29,9 +29,9 @@ export const efficiencyRoutes: AppRouteRecord = {
           },
           children: [
             {
-              path: 'zhouqi-qs',
+              path: 'zhouqi_qs',
               name: 'ZhouqiQs',
-              component: '/efficiency/operations/pages/zhouqi-qs',
+              component: '/efficiency/operations/pages/zhouqi_qs',
               meta: {
                 title: '周期-市公司',
                 keepAlive: false,
@@ -39,9 +39,9 @@ export const efficiencyRoutes: AppRouteRecord = {
               }
             },
             {
-              path: 'zhouqi-bm',
+              path: 'zhouqi_bm',
               name: 'ZhouqiBm',
-              component: '/efficiency/operations/pages/zhouqi-bm',
+              component: '/efficiency/operations/pages/zhouqi_bm',
               meta: {
                 title: '周期-部门',
                 keepAlive: false,
@@ -52,7 +52,7 @@ export const efficiencyRoutes: AppRouteRecord = {
         },
         // ==================== 结案率 ====================
         {
-          path: 'close-rate',
+          path: 'close_rate',
           name: 'CloseRate',
           meta: {
             title: 'menus.efficiency.operations.closeRate.title',
@@ -60,9 +60,9 @@ export const efficiencyRoutes: AppRouteRecord = {
           },
           children: [
             {
-              path: 'pacll-bm',
+              path: 'pacll_bm',
               name: 'PacllBm',
-              component: '/efficiency/operations/pages/pacll-bm',
+              component: '/efficiency/operations/pages/pacll_bm',
               meta: {
                 title: '车险结案率(部门)',
                 keepAlive: false,
@@ -70,9 +70,9 @@ export const efficiencyRoutes: AppRouteRecord = {
               }
             },
             {
-              path: 'pacll-xz',
+              path: 'pacll_xz',
               name: 'PacllXz',
-              component: '/efficiency/operations/pages/pacll-xz',
+              component: '/efficiency/operations/pages/pacll_xz',
               meta: {
                 title: '车险结案率(小组)',
                 keepAlive: false,
@@ -80,9 +80,9 @@ export const efficiencyRoutes: AppRouteRecord = {
               }
             },
             {
-              path: 'pacll-ry',
+              path: 'pacll_ry',
               name: 'PacllRy',
-              component: '/efficiency/operations/pages/pacll-ry',
+              component: '/efficiency/operations/pages/pacll_ry',
               meta: {
                 title: '车险结案率(人员)',
                 keepAlive: false,
@@ -101,9 +101,9 @@ export const efficiencyRoutes: AppRouteRecord = {
           },
           children: [
             {
-              path: 'gzl-bm',
+              path: 'gzl_bm',
               name: 'CurGzlBm',
-              component: '/efficiency/operations/pages/gzl-bm',
+              component: '/efficiency/operations/pages/gzl_bm',
               meta: {
                 title: '部门当日工作量',
                 keepAlive: false,
@@ -111,9 +111,9 @@ export const efficiencyRoutes: AppRouteRecord = {
               }
             },
             {
-              path: 'gzl-group',
+              path: 'gzl_group',
               name: 'CurGzlGroup',
-              component: '/efficiency/operations/pages/gzl-group',
+              component: '/efficiency/operations/pages/gzl_group',
               meta: {
                 title: '小组当日工作量',
                 keepAlive: false,
@@ -121,9 +121,9 @@ export const efficiencyRoutes: AppRouteRecord = {
               }
             },
             {
-              path: 'gzl-ry',
+              path: 'gzl_ry',
               name: 'CurGzlRy',
-              component: '/efficiency/operations/pages/gzl-ry',
+              component: '/efficiency/operations/pages/gzl_ry',
               meta: {
                 title: '人员当日工作量',
                 keepAlive: false,
@@ -131,9 +131,9 @@ export const efficiencyRoutes: AppRouteRecord = {
               }
             },
             {
-              path: 'gzl-rs',
+              path: 'gzl_rs',
               name: 'CurGzlRs',
-              component: '/efficiency/operations/pages/gzl-rs',
+              component: '/efficiency/operations/pages/gzl_rs',
               meta: {
                 title: '人伤当日工作量',
                 keepAlive: false,
@@ -141,7 +141,7 @@ export const efficiencyRoutes: AppRouteRecord = {
               }
             },
             {
-              path: 'workload-drill',
+              path: 'workload_drill',
               name: 'WorkloadDrill',
               component: '/efficiency/operations/pages/workload/WorkloadDrillChart',
               meta: {
@@ -156,7 +156,7 @@ export const efficiencyRoutes: AppRouteRecord = {
     },
     // ==================== 成本管控 ====================
     {
-      path: 'cost-control',
+      path: 'cost_control',
       name: 'CostControl',
       meta: {
         title: 'menus.efficiency.costControl.title',
@@ -173,9 +173,9 @@ export const efficiencyRoutes: AppRouteRecord = {
           },
           children: [
             {
-              path: 'zhpfl-khq',
+              path: 'zhpfl_khq',
               name: 'ZhpflKhq',
-              component: '/efficiency/costcontrol/pages/zhpfl-khq',
+              component: '/efficiency/costcontrol/pages/zhpfl_khq',
               meta: {
                 title: '综合赔付率-客户群',
                 keepAlive: false,
@@ -194,9 +194,9 @@ export const efficiencyRoutes: AppRouteRecord = {
           },
           children: [
             {
-              path: 'pflsgn-zgs',
+              path: 'pflsgn_zgs',
               name: 'PflsgnZgs',
-              component: '/efficiency/costcontrol/pages/pflsgn-zgs',
+              component: '/efficiency/costcontrol/pages/pflsgn_zgs',
               meta: {
                 title: '事故年-支公司',
                 keepAlive: false,
@@ -204,9 +204,9 @@ export const efficiencyRoutes: AppRouteRecord = {
               }
             },
             {
-              path: 'pflsgn-khq',
+              path: 'pflsgn_khq',
               name: 'PflsgnKhq',
-              component: '/efficiency/costcontrol/pages/pflsgn-khq',
+              component: '/efficiency/costcontrol/pages/pflsgn_khq',
               meta: {
                 title: '事故年-客户群',
                 keepAlive: false,
@@ -214,9 +214,9 @@ export const efficiencyRoutes: AppRouteRecord = {
               }
             },
             {
-              path: 'pflsgn-xny',
+              path: 'pflsgn_xny',
               name: 'PflsgnXny',
-              component: '/efficiency/costcontrol/pages/pflsgn-xny',
+              component: '/efficiency/costcontrol/pages/pflsgn_xny',
               meta: {
                 title: '事故年-新能源',
                 keepAlive: false,
@@ -235,9 +235,9 @@ export const efficiencyRoutes: AppRouteRecord = {
           },
           children: [
             {
-              path: 'anjun-cx-zgs',
+              path: 'anjun_cx_zgs',
               name: 'AnjunCxZgs',
-              component: '/efficiency/costcontrol/pages/anjun-cx-zgs',
+              component: '/efficiency/costcontrol/pages/anjun_cx_zgs',
               meta: {
                 title: '案均赔款-支公司（车险）',
                 keepAlive: false,
@@ -245,9 +245,9 @@ export const efficiencyRoutes: AppRouteRecord = {
               }
             },
             {
-              path: 'anjun-cx-khq',
+              path: 'anjun_cx_khq',
               name: 'AnjunCxKhq',
-              component: '/efficiency/costcontrol/pages/anjun-cx-khq',
+              component: '/efficiency/costcontrol/pages/anjun_cx_khq',
               meta: {
                 title: '案均赔款-客户群（车险）',
                 keepAlive: false,
@@ -257,7 +257,7 @@ export const efficiencyRoutes: AppRouteRecord = {
             {
               path: 'anjun-cx-xny',
               name: 'AnjunCxXny',
-              component: '/efficiency/costcontrol/pages/anjun-cx-xny',
+              component: '/efficiency/costcontrol/pages/anjun_cx_xny',
               meta: {
                 title: '案均赔款-新能源（车险）',
                 keepAlive: false,
