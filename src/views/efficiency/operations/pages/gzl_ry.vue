@@ -74,8 +74,8 @@
         @row-click="handleRowClick"
         @header-click="handleHeaderClick"
         @sort-change="handleSortChange"
-        @pagination:size-change="handleSizeChange"
-        @pagination:current-change="handleCurrentChange"
+        @pagination:size-change="localHandleSizeChange"
+        @pagination:current-change="localHandleCurrentChange"
       >
         <!-- 序号列：自动计算分页序号 -->
         <template #index="{ $index }">
@@ -392,9 +392,9 @@
     loading,
     error: tableError,
     pagination,
+    fetchData,
     refreshData,
     handleSizeChange,
-    handleCurrentChange,
     columns,
     columnChecks
   } = useTable({
@@ -411,39 +411,31 @@
           userName: tableApiParams.value.userName ?? ''
         }
 
-        const response = await dailyWorkload.axiosRequestDailyWorkloadRy(queryParams)
+        // 后端 /page 端点直接返回 { records, total, current, size }
+        const response = await dailyWorkload.axiosRequestDailyWorkloadRyPage(queryParams)
+        const page = (response ?? {}) as UseTableResult<DailyWorkloadData>
+        const records = page.records || []
 
-        // axios 返回的已经是 res.data.data（后端返回的数据部分）
-        let tableResultData: DailyWorkloadData[] = []
-
-        if (Array.isArray(response)) {
-          tableResultData = response
-
-          if (!isInitialized.value && tableResultData.length) {
-            allOriginData.value = [...tableResultData]
+        if (records.length) {
+          if (!isInitialized.value) {
+            allOriginData.value = [...records]
             buildDeptGroupMap(allOriginData.value)
             isInitialized.value = true
           }
-
-          if (tableResultData.length) {
-            currentMaxTjTime.value = tableResultData[0].maxTjTime || ''
-            // 无日期条件时默认回填最新数据日期
-            if (!searchFormState.value.startDate && tableResultData[0].maxTjTime) {
-              const actualDate = tableResultData[0].maxTjTime.substring(0, 10)
-              searchFormState.value.startDate = actualDate
-              searchFormState.value.endDate = actualDate
-            }
-          } else {
-            currentMaxTjTime.value = ''
+          currentMaxTjTime.value = records[0].maxTjTime || ''
+          // 无日期条件时默认回填最新数据日期
+          if (!searchFormState.value.startDate && records[0].maxTjTime) {
+            const actualDate = records[0].maxTjTime.substring(0, 10)
+            searchFormState.value.startDate = actualDate
+            searchFormState.value.endDate = actualDate
           }
+        } else {
+          currentMaxTjTime.value = ''
         }
 
-        // 前端分页
-        const start = (params.current - 1) * params.size
-        const end = start + params.size
         return {
-          records: tableResultData.slice(start, end),
-          total: tableResultData.length,
+          records,
+          total: page.total ?? 0,
           current: params.current,
           size: params.size
         }
@@ -499,6 +491,14 @@
   const handleSortChange = () => {}
 
   // ==================== 9. 页面操作方法 ====================
+  const localHandleCurrentChange = (newCurrent: number) => {
+    fetchData({ current: newCurrent })
+  }
+
+  const localHandleSizeChange = (newSize: number) => {
+    fetchData({ size: newSize, current: 1 })
+  }
+
   /**
    * @description 手动刷新：重新拉取全量数据
    */
@@ -513,10 +513,8 @@
         buildDeptGroupMap(allOriginData.value)
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
-      refreshData()
-    } catch {
-      refreshData()
-    }
+      await fetchData()
+    } catch { await fetchData() }
   }
 
   /**

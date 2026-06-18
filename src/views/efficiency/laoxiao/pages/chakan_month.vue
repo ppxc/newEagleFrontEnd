@@ -56,7 +56,7 @@
         :height="tableHeight"
         :scrollbar-always-on="true"
         empty-height="660px"
-        @pagination:size-change="handleSizeChange"
+        @pagination:size-change="localHandleSizeChange"
         @pagination:current-change="handleCurrentChange"
       >
         <template #index="{ $index }">
@@ -68,16 +68,14 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
+  import { useLaoxiaoTable } from '../../api/useLaoxiaoTable'
 
   defineOptions({ name: 'ChakanMonthTable' })
 
-  // ==================== 1. 类型定义 ====================
   interface ChakanMonthData {
     tjdate: string | null
     comnameSgs: string | null
@@ -89,200 +87,50 @@
     usercode: string | null
     tjMonth: string | null
     hj: number | null
-    day1: number | null
-    day2: number | null
-    day3: number | null
-    day4: number | null
-    day5: number | null
-    day6: number | null
-    day7: number | null
-    day8: number | null
-    day9: number | null
-    day10: number | null
-    day11: number | null
-    day12: number | null
-    day13: number | null
-    day14: number | null
-    day15: number | null
-    day16: number | null
-    day17: number | null
-    day18: number | null
-    day19: number | null
-    day20: number | null
-    day21: number | null
-    day22: number | null
-    day23: number | null
-    day24: number | null
-    day25: number | null
-    day26: number | null
-    day27: number | null
-    day28: number | null
-    day29: number | null
-    day30: number | null
-    day31: number | null
+    day1: number | null; day2: number | null; day3: number | null; day4: number | null
+    day5: number | null; day6: number | null; day7: number | null; day8: number | null
+    day9: number | null; day10: number | null; day11: number | null; day12: number | null
+    day13: number | null; day14: number | null; day15: number | null; day16: number | null
+    day17: number | null; day18: number | null; day19: number | null; day20: number | null
+    day21: number | null; day22: number | null; day23: number | null; day24: number | null
+    day25: number | null; day26: number | null; day27: number | null; day28: number | null
+    day29: number | null; day30: number | null; day31: number | null
     maxTjTime: string | null
   }
 
-  interface UseTableParams {
-    current: number
-    size: number
-    [key: string]: any
-  }
-  interface UseTableResult<T> {
-    records: T[]
-    total: number
-    current: number
-    size: number
-  }
-
-  // ==================== 2. 常量 ====================
   const tableHeight = 'calc(100vh - 330px)'
-  const DEFAULT_PAGINATION = { current: 1, size: 20 }
-  const DEFAULT_FORM = { tjDate: '', comnameSgs: '' }
 
-  // ==================== 3. 状态 ====================
-  const searchBarRef = ref<any>(null)
-  const currentMaxTjTime = ref<string>('')
-  const comnameSgsOptions = ref<Array<{ label: string; value: string }>>([])
-
-  // ==================== 4. 搜索表单 ====================
-  const rules = { tjDate: [{ required: false, message: '请选择统计时间', trigger: 'change' }] }
-  const searchFormState = ref({ ...DEFAULT_FORM })
-  const tableApiParams = ref({ ...DEFAULT_PAGINATION, ...searchFormState.value })
-
-  const searchItems = computed(() => [
-    {
-      key: 'tjDate',
-      label: '统计时间',
-      type: 'date',
-      props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' }
-    },
-    {
-      key: 'comnameSgs',
-      label: '地市公司',
-      type: 'select',
-      props: {
-        placeholder: '请选择地市公司',
-        clearable: true,
-        options: comnameSgsOptions.value
-      }
-    }
-  ])
-
-  // 按当前 tjDate 拉取地市公司下拉选项（去重）
-  const buildComnameSgsOptions = async (tjDate: string) => {
-    try {
-      const res = await dataReport.axiosRequestChakanMonth({ current: 1, size: 9999, tjDate, comnameSgs: '' })
-      if (Array.isArray(res)) {
-        const set = new Set<string>()
-        res.forEach((item: ChakanMonthData) => {
-          if (item.comnameSgs) set.add(item.comnameSgs)
-        })
-        comnameSgsOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
-      }
-    } catch { /* ignore */ }
-  }
-
-  // ==================== 5. 表格 Hook ====================
   const {
-    data: tableData,
-    loading,
-    error: tableError,
-    pagination,
-    refreshData,
-    handleSizeChange,
-    handleCurrentChange,
-    columns,
-    columnChecks
-  } = useTable({
-    core: {
-      apiFn: async (params: UseTableParams): Promise<UseTableResult<ChakanMonthData>> => {
-        const queryParams = {
-          current: params.current,
-          size: params.size,
-          tjDate: tableApiParams.value.tjDate || '',
-          comnameSgs: tableApiParams.value.comnameSgs ?? ''
-        }
-        const response = await dataReport.axiosRequestChakanMonth(queryParams)
-        let tableResultData: ChakanMonthData[] = []
-        if (Array.isArray(response)) {
-          tableResultData = response
-          if (tableResultData.length) {
-            currentMaxTjTime.value = tableResultData[0].maxTjTime || ''
-            if (!searchFormState.value.tjDate && tableResultData[0].maxTjTime) {
-              searchFormState.value.tjDate = tableResultData[0].maxTjTime.substring(0, 10)
-            }
-            // 用当前 tjDate 重建下拉
-            buildComnameSgsOptions(tableApiParams.value.tjDate || tableResultData[0].maxTjTime || '')
-          } else {
-            currentMaxTjTime.value = ''
-            comnameSgsOptions.value = []
-          }
-        }
-        const start = (params.current - 1) * params.size
-        return {
-          records: tableResultData.slice(start, start + params.size),
-          total: tableResultData.length,
-          current: params.current,
-          size: params.size
-        }
-      },
-      apiParams: tableApiParams.value,
-      immediate: true,
-      columnsFactory: () => [
-        // { type: 'index', width: 60, align: 'center', fixed: 'left' },
-        // { prop: 'tjdate', label: '统计日期', width: 110, align: 'center', fixed: 'left' },
-        { prop: 'comnameSgs', label: '地市公司', width: 130, align: 'center', fixed: 'left', sortable: true },
-        { prop: 'comname', label: '部门', width: 130, align: 'center', fixed: 'left', sortable: true },
-        { prop: 'username', label: '人员', width: 100, align: 'center', fixed: 'left' },
-        { prop: 'usercode', label: '工号', width: 110, align: 'center' },
-        { prop: 'tjMonth', label: '统计月', width: 100, align: 'center' },
-        { prop: 'hj', label: '汇总', width: 110, align: 'center', sortable: true, fixed: 'right' },
-        ...Array.from({ length: 31 }, (_, i) => ({
-          prop: `day${i + 1}`,
-          label: `${i + 1}号`,
-          width: 70,
-          align: 'center' as const,
-          sortable: true
-        }))
-      ]
-    },
-    performance: {
-      enableCache: true,
-      cacheTime: 5 * 60 * 1000,
-      debounceTime: 300,
-      maxCacheSize: 100
-    }
+    searchBarRef, searchFormState, searchItems, rules,
+    fetchData, tableData, loading, tableError, pagination,
+    handleSizeChange, handleCurrentChange, columns, columnChecks,
+    currentMaxTjTime, tableApiParams,
+    handleRefresh, handleSearch, handleReset
+  } = useLaoxiaoTable<ChakanMonthData>({
+    pageApi: dataReport.axiosRequestChakanMonthPage,
+    listApi: dataReport.axiosRequestChakanMonth,
+    hasComnameSgs: true,
+    columnsFactory: () => [
+      { prop: 'comnameSgs', label: '地市公司', width: 130, align: 'center', fixed: 'left', sortable: true },
+      { prop: 'comname', label: '部门', width: 130, align: 'center', fixed: 'left', sortable: true },
+      { prop: 'username', label: '人员', width: 100, align: 'center', fixed: 'left' },
+      { prop: 'usercode', label: '工号', width: 110, align: 'center' },
+      { prop: 'tjMonth', label: '统计月', width: 100, align: 'center' },
+      { prop: 'hj', label: '汇总', width: 110, align: 'center', sortable: true, fixed: 'right' },
+      ...Array.from({ length: 31 }, (_, i) => ({
+        prop: `day${i + 1}`,
+        label: `${i + 1}号`,
+        width: 70,
+        align: 'center' as const,
+        sortable: true
+      }))
+    ]
   })
 
-  // ==================== 6. 操作 ====================
-  const handleRefresh = async () => {
-    try {
-      const res = await dataReport.axiosRequestChakanMonth({ current: 1, size: 9999, tjDate: tableApiParams.value.tjDate, comnameSgs: '' })
-      if (Array.isArray(res) && res.length) {
-        currentMaxTjTime.value = res[0].maxTjTime || ''
-        buildComnameSgsOptions(tableApiParams.value.tjDate || res[0].maxTjTime || '')
-      }
-    } catch { /* ignore */ }
-    refreshData()
+  const localHandleSizeChange = (newSize: number) => {
+    fetchData({ size: newSize, current: 1 })
   }
 
-  const handleSearch = async () => {
-    try {
-      await searchBarRef.value?.validate()
-      tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }
-      refreshData()
-    } catch { /* validation failed */ }
-  }
-
-  const handleReset = () => {
-    Object.assign(searchFormState.value, DEFAULT_FORM)
-    tableApiParams.value = { ...DEFAULT_PAGINATION, ...searchFormState.value }
-    comnameSgsOptions.value = []
-    refreshData()
-  }
-
-  // ==================== 7. 导出 ====================
   const exportColumns = (item: ChakanMonthData, index: number) => ({
     序号: index + 1,
     统计日期: item.tjdate,
@@ -292,40 +140,18 @@
     工号: item.usercode,
     统计月: item.tjMonth,
     汇总: item.hj,
-    '1号': item.day1,
-    '2号': item.day2,
-    '3号': item.day3,
-    '4号': item.day4,
-    '5号': item.day5,
-    '6号': item.day6,
-    '7号': item.day7,
-    '8号': item.day8,
-    '9号': item.day9,
-    '10号': item.day10,
-    '11号': item.day11,
-    '12号': item.day12,
-    '13号': item.day13,
-    '14号': item.day14,
-    '15号': item.day15,
-    '16号': item.day16,
-    '17号': item.day17,
-    '18号': item.day18,
-    '19号': item.day19,
-    '20号': item.day20,
-    '21号': item.day21,
-    '22号': item.day22,
-    '23号': item.day23,
-    '24号': item.day24,
-    '25号': item.day25,
-    '26号': item.day26,
-    '27号': item.day27,
-    '28号': item.day28,
-    '29号': item.day29,
-    '30号': item.day30,
-    '31号': item.day31
+    '1号': item.day1, '2号': item.day2, '3号': item.day3, '4号': item.day4,
+    '5号': item.day5, '6号': item.day6, '7号': item.day7, '8号': item.day8,
+    '9号': item.day9, '10号': item.day10, '11号': item.day11, '12号': item.day12,
+    '13号': item.day13, '14号': item.day14, '15号': item.day15, '16号': item.day16,
+    '17号': item.day17, '18号': item.day18, '19号': item.day19, '20号': item.day20,
+    '21号': item.day21, '22号': item.day22, '23号': item.day23, '24号': item.day24,
+    '25号': item.day25, '26号': item.day26, '27号': item.day27, '28号': item.day28,
+    '29号': item.day29, '30号': item.day30, '31号': item.day31
   })
 
   const dateSuffix = () => new Date().toLocaleDateString().replace(/\//g, '-')
+  const SHEET_NAME = '查勘量-月度每日'
 
   const handleExportCurrent = () => {
     const data = tableData.value as ChakanMonthData[]
@@ -333,11 +159,10 @@
       ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' })
       return
     }
-    const exportData = data.map(exportColumns)
-    const ws = XLSX.utils.json_to_sheet(exportData)
+    const ws = XLSX.utils.json_to_sheet(data.map(exportColumns))
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, '查勘量-月度每日')
-    XLSX.writeFile(wb, `查勘量-月度每日_${dateSuffix()}.xlsx`)
+    XLSX.utils.book_append_sheet(wb, ws, SHEET_NAME)
+    XLSX.writeFile(wb, `${SHEET_NAME}_${dateSuffix()}.xlsx`)
     ElNotification({ title: '成功', message: '导出成功', type: 'success' })
   }
 
@@ -349,11 +174,10 @@
         ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' })
         return
       }
-      const exportData = data.map(exportColumns)
-      const ws = XLSX.utils.json_to_sheet(exportData)
+      const ws = XLSX.utils.json_to_sheet(data.map(exportColumns))
       const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, '查勘量-月度每日')
-      XLSX.writeFile(wb, `查勘量-月度每日_全部_${dateSuffix()}.xlsx`)
+      XLSX.utils.book_append_sheet(wb, ws, SHEET_NAME)
+      XLSX.writeFile(wb, `${SHEET_NAME}_全部_${dateSuffix()}.xlsx`)
       ElNotification({ title: '成功', message: `${data.length} 条数据导出成功`, type: 'success' })
     } catch {
       ElNotification({ title: '错误', message: '导出失败', type: 'error' })

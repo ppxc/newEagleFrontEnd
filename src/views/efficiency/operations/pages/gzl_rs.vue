@@ -71,8 +71,8 @@
         @row-click="handleRowClick"
         @header-click="handleHeaderClick"
         @sort-change="handleSortChange"
-        @pagination:size-change="handleSizeChange"
-        @pagination:current-change="handleCurrentChange"
+        @pagination:size-change="localHandleSizeChange"
+        @pagination:current-change="localHandleCurrentChange"
       >
         <!-- 序号列：自动计算分页序号 -->
         <template #index="{ $index }">
@@ -226,9 +226,9 @@
     loading,
     error: tableError,
     pagination,
+    fetchData,
     refreshData,
     handleSizeChange,
-    handleCurrentChange,
     columns,
     columnChecks
   } = useTable({
@@ -242,39 +242,31 @@
           comName: tableApiParams.value.comName ?? ''
         }
 
-        // 最终接口
-        const response = await dailyWorkload.axiosRequestDailyWorkloadRs(queryParams)
+        // 后端 /page 端点直接返回 { records, total, current, size }
+        const response = await dailyWorkload.axiosRequestDailyWorkloadRsPage(queryParams)
+        const page = (response ?? {}) as UseTableResult<DailyWorkloadRsData>
+        const records = page.records || []
 
-        // axios 返回的已经是 res.data.data（后端返回的数据部分）
-        let tableResultData: DailyWorkloadRsData[] = []
-
-        if (Array.isArray(response)) {
-          tableResultData = response
-
-          if (!isInitialized.value && tableResultData.length) {
-            allOriginData.value = [...tableResultData]
+        if (records.length) {
+          if (!isInitialized.value) {
+            allOriginData.value = [...records]
             buildDeptOptions(allOriginData.value)
             isInitialized.value = true
           }
-
-          if (tableResultData.length) {
-            currentMaxTjTime.value = tableResultData[0].maxTjTime || ''
-            // 无日期条件时默认回填最新数据日期
-            if (!searchFormState.value.startDate && tableResultData[0].maxTjTime) {
-              const actualDate = tableResultData[0].maxTjTime.substring(0, 10)
-              searchFormState.value.startDate = actualDate
-              searchFormState.value.endDate = actualDate
-            }
-          } else {
-            currentMaxTjTime.value = ''
+          currentMaxTjTime.value = records[0].maxTjTime || ''
+          // 无日期条件时默认回填最新数据日期
+          if (!searchFormState.value.startDate && records[0].maxTjTime) {
+            const actualDate = records[0].maxTjTime.substring(0, 10)
+            searchFormState.value.startDate = actualDate
+            searchFormState.value.endDate = actualDate
           }
+        } else {
+          currentMaxTjTime.value = ''
         }
 
-        const start = (params.current - 1) * params.size
-        const end = start + params.size
         return {
-          records: tableResultData.slice(start, end),
-          total: tableResultData.length,
+          records,
+          total: page.total ?? 0,
           current: params.current,
           size: params.size
         }
@@ -319,6 +311,14 @@
   const handleSortChange = () => {}
 
   // ==================== 9. 刷新 / 搜索 / 重置 ====================
+  const localHandleCurrentChange = (newCurrent: number) => {
+    fetchData({ current: newCurrent })
+  }
+
+  const localHandleSizeChange = (newSize: number) => {
+    fetchData({ size: newSize, current: 1 })
+  }
+
   const handleRefresh = async () => {
     try {
       // 记录刷新日志
@@ -330,10 +330,8 @@
         buildDeptOptions(allOriginData.value)
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
-      refreshData()
-    } catch {
-      refreshData()
-    }
+      await fetchData()
+    } catch { await fetchData() }
   }
 
   const handleSearch = async () => {

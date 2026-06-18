@@ -267,84 +267,84 @@
       "daily": {
         "title": "日常通报",
         "periodic": "周期通报"
+      }
+    },
+    "operations": {
+      "title": "运营效率",
+      "byQuantity": {
+        "title": "按量赔款"
       },
-      "operations": {
-        "title": "运营效率",
-        "byQuantity": {
-          "title": "按量赔款"
-        },
-        "claimCycle": {
-          "title": "理赔周期"
-        },
-        "closeRate": {
-          "title": "结案率"
-        },
-        "daily": {
-          "title": "日常通报"
-        }
+      "claimCycle": {
+        "title": "理赔周期"
       },
-      "costControl": {
-        "title": "成本管控",
-        "zhpfl": {
-          "title": "综合赔付率"
-        },
-        "pflsgn": {
-          "title": "事故年赔付率"
-        },
-        "policyYear": {
-          "title": "保单年赔付率"
-        },
-        "carAvgLoss": {
-          "title": "车均定损"
-        },
-        "repairShop": {
-          "title": "维修单位"
-        },
-        "anjun": {
-          "title": "案均赔款"
-        }
+      "closeRate": {
+        "title": "结案率"
       },
-      "laoxiao": {
-        "title": "劳效监控",
-        "yearMonth": {
-          "title": "年度-每月"
-        },
-        "monthDay": {
-          "title": "月度-每天"
-        },
-        "workloadYearMonth": {
-          "title": "年度工作量-每月"
-        },
-        "workloadMonthDay": {
-          "title": "月度工作量-每天"
-        },
-        "chakanYear": {
-          "title": "查勘量"
-        },
-        "dingsunTjlYear": {
-          "title": "定损提交量"
-        },
-        "dingsunWclYear": {
-          "title": "定损完成量"
-        },
-        "ckDswcYear": {
-          "title": "查勘量+定损完成"
-        },
-        "dingsunZflYear": {
-          "title": "定损支付量"
-        },
-        "lisuanYear": {
-          "title": "理算量"
-        },
-        "rsGzlYear": {
-          "title": "人伤跟踪量"
-        },
-        "rsTjlYear": {
-          "title": "人伤调解量"
-        },
-        "chakanMonth": {
-          "title": "查勘量"
-        }
+      "daily": {
+        "title": "日常通报"
+      }
+    },
+    "costControl": {
+      "title": "成本管控",
+      "zhpfl": {
+        "title": "综合赔付率"
+      },
+      "pflsgn": {
+        "title": "事故年赔付率"
+      },
+      "policyYear": {
+        "title": "保单年赔付率"
+      },
+      "carAvgLoss": {
+        "title": "车均定损"
+      },
+      "repairShop": {
+        "title": "维修单位"
+      },
+      "anjun": {
+        "title": "案均赔款"
+      }
+    },
+    "laoxiao": {
+      "title": "劳效监控",
+      "yearMonth": {
+        "title": "年度-每月"
+      },
+      "monthDay": {
+        "title": "月度-每天"
+      },
+      "workloadYearMonth": {
+        "title": "年度工作量-每月"
+      },
+      "workloadMonthDay": {
+        "title": "月度工作量-每天"
+      },
+      "chakanYear": {
+        "title": "查勘量"
+      },
+      "dingsunTjlYear": {
+        "title": "定损提交量"
+      },
+      "dingsunWclYear": {
+        "title": "定损完成量"
+      },
+      "ckDswcYear": {
+        "title": "查勘量+定损完成"
+      },
+      "dingsunZflYear": {
+        "title": "定损支付量"
+      },
+      "lisuanYear": {
+        "title": "理算量"
+      },
+      "rsGzlYear": {
+        "title": "人伤跟踪量"
+      },
+      "rsTjlYear": {
+        "title": "人伤调解量"
+      },
+      "chakanMonth": {
+        "title": "查勘量"
       }
     },
     

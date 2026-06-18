@@ -667,7 +667,7 @@ function useTableImpl<TApiFn extends (params: any) => Promise<any>>(
     /** 加载数据 */
     fetchData: getData,
     /** 获取数据 */
-    getData: getDataByPage,
+    getData: getData,
     /** 获取数据（防抖） */
     getDataDebounced: debouncedGetDataByPage,
     /** 清空数据 */

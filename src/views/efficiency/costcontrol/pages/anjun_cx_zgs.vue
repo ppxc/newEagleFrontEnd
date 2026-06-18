@@ -57,8 +57,8 @@
         :scrollbar-always-on="true"
         empty-height="660px"
         merge-first-column
-        @pagination:size-change="handleSizeChange"
-        @pagination:current-change="handleCurrentChange"
+        @pagination:size-change="localHandleSizeChange"
+        @pagination:current-change="localHandleCurrentChange"
       >
         <template #index="{ $index }">
           <span>{{ $index + 1 + (pagination.current - 1) * pagination.size }}</span>
@@ -165,7 +165,7 @@
   }
 
   // ==================== 6. 表格 Hook ====================
-  const { data: tableData, loading, error: tableError, pagination, refreshData, handleSizeChange, handleCurrentChange, columns, columnChecks } = useTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<AnjunCxZgsData>> => {
         const queryParams = {
@@ -173,23 +173,21 @@
           tjDate: tableApiParams.value.tjDate || '',
           comnameSgs: tableApiParams.value.comnameSgs ?? ''
         }
-        const response = await claimAverage.axiosRequestAnjunCxZgs(queryParams)
-        let tableResultData: AnjunCxZgsData[] = []
-        if (Array.isArray(response)) {
-          tableResultData = response
-          if (!isInitialized && tableResultData.length) {
-            buildDeptOptions(tableResultData)
+        // 后端 /page 端点直接返回 { records, total, current, size }
+        const response = await claimAverage.axiosRequestAnjunCxZgsPage(queryParams)
+        const page = (response ?? {}) as UseTableResult<AnjunCxZgsData>
+        const records = page.records || []
+        if (records.length) {
+          if (!isInitialized) {
+            buildDeptOptions(records)
             isInitialized = true
           }
-          if (tableResultData.length) {
-            currentMaxTjTime.value = tableResultData[0].maxTjTime || ''
-            if (!searchFormState.value.tjDate && tableResultData[0].maxTjTime) {
-              searchFormState.value.tjDate = tableResultData[0].maxTjTime.substring(0, 10)
-            }
-          } else { currentMaxTjTime.value = '' }
-        }
-        const start = (params.current - 1) * params.size
-        return { records: tableResultData.slice(start, start + params.size), total: tableResultData.length, current: params.current, size: params.size }
+          currentMaxTjTime.value = records[0].maxTjTime || ''
+          if (!searchFormState.value.tjDate && records[0].maxTjTime) {
+            searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10)
+          }
+        } else { currentMaxTjTime.value = '' }
+        return { records, total: page.total ?? 0, current: params.current, size: params.size }
       },
       apiParams: tableApiParams.value,
       immediate: true,
@@ -222,6 +220,14 @@
   })
 
   // ==================== 7. 操作 ====================
+  const localHandleCurrentChange = (newCurrent: number) => {
+    fetchData({ current: newCurrent })
+  }
+
+  const localHandleSizeChange = (newSize: number) => {
+    fetchData({ size: newSize, current: 1 })
+  }
+
   const handleRefresh = async () => {
     try {
       const res = await claimAverage.axiosRequestAnjunCxZgs({ current: 1, size: 9999 })
@@ -229,8 +235,8 @@
         buildDeptOptions(res)
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
-      refreshData()
-    } catch { refreshData() }
+      await fetchData()
+    } catch { await fetchData() }
   }
 
   const handleSearch = async () => {
