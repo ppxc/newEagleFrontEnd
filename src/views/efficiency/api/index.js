@@ -104,9 +104,25 @@ export const dataReport = {
   axiosRequestCkDswcYear(params) {
     return request.get({ url: '/zyxt/api/ck_dswc_year/list', params })
   },
+  /** 查勘量+定损完成-月度每日 */
+  axiosRequestCkDswcMonth(params) {
+    return request.get({ url: '/zyxt/api/ck_dswc_month/list', params })
+  },
   /** 定损支付量-年度每月 */
   axiosRequestDingsunZflYear(params) {
     return request.get({ url: '/zyxt/api/dingsun_zfl_year/list', params })
+  },
+  /** 定损提交量-月度每日 */
+  axiosRequestDingsunTjlMonth(params) {
+    return request.get({ url: '/zyxt/api/dingsun_tjl_month/list', params })
+  },
+  /** 定损完成量-月度每日 */
+  axiosRequestDingsunWclMonth(params) {
+    return request.get({ url: '/zyxt/api/dingsun_wcl_month/list', params })
+  },
+  /** 定损支付量-月度每日 */
+  axiosRequestDingsunZflMonth(params) {
+    return request.get({ url: '/zyxt/api/dingsun_zfl_month/list', params })
   },
   /** 理算量-年度每月 */
   axiosRequestLisuanYear(params) {
@@ -120,9 +136,21 @@ export const dataReport = {
   axiosRequestRsTjlYear(params) {
     return request.get({ url: '/zyxt/api/rs_tjl_year/list', params })
   },
+  /** 人伤跟踪量-月度每日 */
+  axiosRequestRsGzlMonth(params) {
+    return request.get({ url: '/zyxt/api/rs_gzl_month/list', params })
+  },
+  /** 人伤调解量-月度每日 */
+  axiosRequestRsTjlMonth(params) {
+    return request.get({ url: '/zyxt/api/rs_tjl_month/list', params })
+  },
   /** 查勘量-月度每日 */
   axiosRequestChakanMonth(params) {
     return request.get({ url: '/zyxt/api/chakan_month/list', params })
+  },
+  /** 理算量-月度每日 */
+  axiosRequestLisuanMonth(params) {
+    return request.get({ url: '/zyxt/api/lisuan_month/list', params })
   },
   // ==================== 分页端点（laoxiao 9 + chakan_month） ====================
   // 旧 /list 端点保留兼容；新 /page 端点由 useTable 直接消费 PageResult<T>。
@@ -142,9 +170,25 @@ export const dataReport = {
   axiosRequestCkDswcYearPage(params) {
     return request.get({ url: '/zyxt/api/ck_dswc_year/page', params })
   },
+  /** 查勘量+定损完成-月度每日 - 分页 */
+  axiosRequestCkDswcMonthPage(params) {
+    return request.get({ url: '/zyxt/api/ck_dswc_month/page', params })
+  },
   /** 定损支付量-年度每月 - 分页 */
   axiosRequestDingsunZflYearPage(params) {
     return request.get({ url: '/zyxt/api/dingsun_zfl_year/page', params })
+  },
+  /** 定损提交量-月度每日 - 分页 */
+  axiosRequestDingsunTjlMonthPage(params) {
+    return request.get({ url: '/zyxt/api/dingsun_tjl_month/page', params })
+  },
+  /** 定损完成量-月度每日 - 分页 */
+  axiosRequestDingsunWclMonthPage(params) {
+    return request.get({ url: '/zyxt/api/dingsun_wcl_month/page', params })
+  },
+  /** 定损支付量-月度每日 - 分页 */
+  axiosRequestDingsunZflMonthPage(params) {
+    return request.get({ url: '/zyxt/api/dingsun_zfl_month/page', params })
   },
   /** 理算量-年度每月 - 分页 */
   axiosRequestLisuanYearPage(params) {
@@ -158,9 +202,21 @@ export const dataReport = {
   axiosRequestRsTjlYearPage(params) {
     return request.get({ url: '/zyxt/api/rs_tjl_year/page', params })
   },
+  /** 人伤跟踪量-月度每日 - 分页 */
+  axiosRequestRsGzlMonthPage(params) {
+    return request.get({ url: '/zyxt/api/rs_gzl_month/page', params })
+  },
+  /** 人伤调解量-月度每日 - 分页 */
+  axiosRequestRsTjlMonthPage(params) {
+    return request.get({ url: '/zyxt/api/rs_tjl_month/page', params })
+  },
   /** 查勘量-月度每日 - 分页 */
   axiosRequestChakanMonthPage(params) {
     return request.get({ url: '/zyxt/api/chakan_month/page', params })
+  },
+  /** 理算量-月度每日 - 分页 */
+  axiosRequestLisuanMonthPage(params) {
+    return request.get({ url: '/zyxt/api/lisuan_month/page', params })
   }
 }
 

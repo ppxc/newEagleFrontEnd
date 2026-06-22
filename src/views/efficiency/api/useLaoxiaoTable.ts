@@ -129,6 +129,14 @@ export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
           if (!searchFormState.value.tjDate && firstRecord.maxTjTime) {
             searchFormState.value.tjDate = firstRecord.maxTjTime.substring(0, 10)
           }
+          // 用当前页数据直接构建地市公司下拉选项（避免额外的 listApi 请求）
+          if (hasComnameSgs) {
+            const set = new Set<string>()
+            records.forEach((item: any) => {
+              if (item.comnameSgs) set.add(item.comnameSgs)
+            })
+            comnameSgsOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
+          }
         } else {
           currentMaxTjTime.value = ''
           comnameSgsOptions.value = []
@@ -153,6 +161,13 @@ export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
   })
 
   // ==================== 操作 ====================
+  const fetchData = async (override?: Partial<UseTableParams>) => {
+    if (override) {
+      tableApiParams.value = { ...tableApiParams.value, ...override }
+    }
+    await refreshData()
+  }
+
   const handleRefresh = async () => {
     if (hasComnameSgs) {
       try {

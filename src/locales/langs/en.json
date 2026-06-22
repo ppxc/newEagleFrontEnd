@@ -310,6 +310,15 @@
         },
         "monthDay": {
           "title": "Monthly-Daily"
+        },
+        "rsGzlMonth": {
+          "title": "Injury Follow-up (Daily)"
+        },
+        "rsTjlMonth": {
+          "title": "Injury Mediation (Daily)"
+        },
+        "lisuanMonth": {
+          "title": "Lisuan (Daily)"
         }
       }
     },

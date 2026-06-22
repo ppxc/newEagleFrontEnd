@@ -13,7 +13,7 @@ export const profileRoutes: AppRouteRecord = {
     {
       path: 'index',
       name: 'ProfileIndex',
-      component: '/test/pages/test-index',
+      component: '/test/pages/test_index',
       meta: {
         title: 'menus.profile.title',
         keepAlive: false

@@ -465,6 +465,76 @@ export const efficiencyRoutes: AppRouteRecord[] = [
               keepAlive: false,
               roles: ['R_ADMIN', 'R_SUPER']
             }
+          },
+          {
+            path: 'ck_dswc_month',
+            name: 'CkDswcMonth',
+            component: '/efficiency/laoxiao/pages/ck_dswc_month',
+            meta: {
+              title: 'menus.laoxiao.ckDswcMonth.title',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'dingsun_tjl_month',
+            name: 'DingsunTjlMonth',
+            component: '/efficiency/laoxiao/pages/dingsun_tjl_month',
+            meta: {
+              title: 'menus.laoxiao.dingsunTjlMonth.title',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'dingsun_wcl_month',
+            name: 'DingsunWclMonth',
+            component: '/efficiency/laoxiao/pages/dingsun_wcl_month',
+            meta: {
+              title: 'menus.laoxiao.dingsunWclMonth.title',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'dingsun_zfl_month',
+            name: 'DingsunZflMonth',
+            component: '/efficiency/laoxiao/pages/dingsun_zfl_month',
+            meta: {
+              title: 'menus.laoxiao.dingsunZflMonth.title',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'lisuan_month',
+            name: 'LisuanMonth',
+            component: '/efficiency/laoxiao/pages/lisuan_month',
+            meta: {
+              title: 'menus.laoxiao.lisuanMonth.title',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'rs_gzl_month',
+            name: 'RsGzlMonth',
+            component: '/efficiency/laoxiao/pages/rs_gzl_month',
+            meta: {
+              title: 'menus.laoxiao.rsGzlMonth.title',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'rs_tjl_month',
+            name: 'RsTjlMonth',
+            component: '/efficiency/laoxiao/pages/rs_tjl_month',
+            meta: {
+              title: 'menus.laoxiao.rsTjlMonth.title',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
           }
         ]
       }

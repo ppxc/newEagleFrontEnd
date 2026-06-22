@@ -357,6 +357,27 @@
       },
       "chakanMonth": {
         "title": "查勘量"
+      },
+      "ckDswcMonth": {
+        "title": "查勘量+定损完成"
+      },
+      "dingsunTjlMonth": {
+        "title": "定损提交量"
+      },
+      "dingsunWclMonth": {
+        "title": "定损完成量"
+      },
+      "dingsunZflMonth": {
+        "title": "定损支付量"
+      },
+      "lisuanMonth": {
+        "title": "理算量"
+      },
+      "rsGzlMonth": {
+        "title": "人伤跟踪量"
+      },
+      "rsTjlMonth": {
+        "title": "人伤调解量"
       }
     },
     
