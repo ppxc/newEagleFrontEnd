@@ -1,13 +1,13 @@
 <template>
-  <div class="weixiu-danwei-page">
-    <ElEmpty :description="$t('menus.efficiency.costControl.repairShop.title') + ' - 敬请期待'" />
+  <div class="baodannian-pfl-placeholder-page">
+    <ElEmpty :description="$t('menus.costControl.policyYear.placeholder.title') + ' - 敬请期待'" />
   </div>
 </template>
 
 <script setup lang="ts"></script>
 
 <style scoped>
-.weixiu-danwei-page {
+.baodannian-pfl-placeholder-page {
   width: 100%;
   height: 100%;
   display: flex;

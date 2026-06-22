@@ -1,13 +1,13 @@
 <template>
-  <div class="anliang-peikuan-page">
-    <ElEmpty :description="$t('menus.efficiency.operations.byQuantity.title') + ' - 敬请期待'" />
+  <div class="anliang-peikuan-placeholder-page">
+    <ElEmpty :description="$t('menus.operations.byQuantity.placeholder.title') + ' - 敬请期待'" />
   </div>
 </template>
 
 <script setup lang="ts"></script>
 
 <style scoped>
-.anliang-peikuan-page {
+.anliang-peikuan-placeholder-page {
   width: 100%;
   height: 100%;
   display: flex;

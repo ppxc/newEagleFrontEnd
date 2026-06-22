@@ -258,7 +258,10 @@
       "operations": {
         "title": "Operations Efficiency",
         "byQuantity": {
-          "title": "By-Quantity Compensation"
+          "title": "By-Quantity Compensation",
+          "placeholder": {
+            "title": "By-Quantity Compensation - Placeholder"
+          }
         },
         "claimCycle": {
           "title": "Claim Cycle"
@@ -279,13 +282,22 @@
           "title": "Accident-Year Payout Ratio"
         },
         "policyYear": {
-          "title": "Policy-Year Payout Ratio"
+          "title": "Policy-Year Payout Ratio",
+          "placeholder": {
+            "title": "Policy-Year Payout Ratio - Placeholder"
+          }
         },
         "carAvgLoss": {
-          "title": "Car-Average Loss"
+          "title": "Car-Average Loss",
+          "placeholder": {
+            "title": "Car-Average Loss - Placeholder"
+          }
         },
         "repairShop": {
-          "title": "Repair Shop"
+          "title": "Repair Shop",
+          "placeholder": {
+            "title": "Repair Shop - Placeholder"
+          }
         },
         "anjun": {
           "title": "Average Claim Per Case"

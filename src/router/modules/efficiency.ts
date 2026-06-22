@@ -24,12 +24,22 @@ export const efficiencyRoutes: AppRouteRecord[] = [
       {
         path: 'anliang_peikuan',
         name: 'AnliangPeikuan',
-        component: '/efficiency/operations/pages/anliang_peikuan',
         meta: {
           title: 'menus.operations.byQuantity.title',
-          keepAlive: false,
-          roles: ['R_ADMIN', 'R_SUPER']
-        }
+          keepAlive: false
+        },
+        children: [
+          {
+            path: 'placeholder',
+            name: 'AnliangPeikuanPlaceholder',
+            component: '/efficiency/operations/pages/anliang_peikuan_placeholder',
+            meta: {
+              title: 'menus.operations.byQuantity.placeholder.title',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          }
+        ]
       },
       // ==================== 理赔周期 ====================
       {
@@ -274,34 +284,64 @@ export const efficiencyRoutes: AppRouteRecord[] = [
       {
         path: 'baodannian_pfl',
         name: 'BaodannianPfl',
-        component: '/efficiency/costcontrol/pages/baodannian_pfl',
         meta: {
           title: 'menus.costControl.policyYear.title',
-          keepAlive: false,
-          roles: ['R_ADMIN', 'R_SUPER']
-        }
+          keepAlive: false
+        },
+        children: [
+          {
+            path: 'placeholder',
+            name: 'BaodannianPflPlaceholder',
+            component: '/efficiency/costcontrol/pages/baodannian_pfl_placeholder',
+            meta: {
+              title: 'menus.costControl.policyYear.placeholder.title',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          }
+        ]
       },
       // ==================== 车均定损 ====================
       {
         path: 'chejun_dingsun',
         name: 'ChejunDingsun',
-        component: '/efficiency/costcontrol/pages/chejun_dingsun',
         meta: {
           title: 'menus.costControl.carAvgLoss.title',
-          keepAlive: false,
-          roles: ['R_ADMIN', 'R_SUPER']
-        }
+          keepAlive: false
+        },
+        children: [
+          {
+            path: 'placeholder',
+            name: 'ChejunDingsunPlaceholder',
+            component: '/efficiency/costcontrol/pages/chejun_dingsun_placeholder',
+            meta: {
+              title: 'menus.costControl.carAvgLoss.placeholder.title',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          }
+        ]
       },
       // ==================== 维修单位 ====================
       {
         path: 'weixiu_danwei',
         name: 'WeixiuDanwei',
-        component: '/efficiency/costcontrol/pages/weixiu_danwei',
         meta: {
           title: 'menus.costControl.repairShop.title',
-          keepAlive: false,
-          roles: ['R_ADMIN', 'R_SUPER']
-        }
+          keepAlive: false
+        },
+        children: [
+          {
+            path: 'placeholder',
+            name: 'WeixiuDanweiPlaceholder',
+            component: '/efficiency/costcontrol/pages/weixiu_danwei_placeholder',
+            meta: {
+              title: 'menus.costControl.repairShop.placeholder.title',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          }
+        ]
       }
     ]
   },

@@ -272,7 +272,10 @@
     "operations": {
       "title": "运营效率",
       "byQuantity": {
-        "title": "按量赔款"
+        "title": "按量赔款",
+        "placeholder": {
+          "title": "按量赔款-占位"
+        }
       },
       "claimCycle": {
         "title": "理赔周期"
@@ -293,13 +296,22 @@
         "title": "事故年赔付率"
       },
       "policyYear": {
-        "title": "保单年赔付率"
+        "title": "保单年赔付率",
+        "placeholder": {
+          "title": "保单年赔付率-占位"
+        }
       },
       "carAvgLoss": {
-        "title": "车均定损"
+        "title": "车均定损",
+        "placeholder": {
+          "title": "车均定损-占位"
+        }
       },
       "repairShop": {
-        "title": "维修单位"
+        "title": "维修单位",
+        "placeholder": {
+          "title": "维修单位-占位"
+        }
       },
       "anjun": {
         "title": "案均赔款"
