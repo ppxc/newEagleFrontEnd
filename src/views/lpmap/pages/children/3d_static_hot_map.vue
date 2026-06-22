@@ -66,8 +66,48 @@
       </div>
       <div id="heat-map-container" class="map-container">
         <!-- 行政区划按钮（改用字体图标） -->
-        <div class="bottom-in-map" @click="toggleDistricts" title="显示/隐藏行政区划">
-          <ArtSvgIcon icon="ri:grid-line" class="district-icon-btn" />
+        <div
+          class="district-img-btn"
+          :class="{ active: isDistrictsVisible }"
+          @click="toggleDistricts"
+          title="显示/隐藏行政区划"
+        >
+          <ArtSvgIcon icon="ri:grid-line" />
+        </div>
+        <!-- 异常高亮开关 -->
+        <div
+          class="district-img-btn"
+          :class="{ active: showAbnormal }"
+          @click="showAbnormal = !showAbnormal"
+          title="显示/隐藏异常高亮点（count > μ+2σ）"
+          style="top: 50px;"
+        >
+          <ArtSvgIcon icon="ri:alert-line" />
+        </div>
+        <!-- 异常点详情面板（点击 marker 时显示，与汛期驾驶舱停车场面板同款） -->
+        <div v-if="abnormalSelected" class="abnormal-detail-panel">
+          <div class="abnormal-detail-header">
+            <span class="abnormal-detail-title">异常高值区域</span>
+            <div class="abnormal-detail-close" title="关闭" @click.stop="abnormalSelected = null">✕</div>
+          </div>
+          <div class="abnormal-detail-body">
+            <div class="detail-row">
+              <span class="detail-label">经度</span>
+              <span class="detail-value">{{ abnormalSelected.lng.toFixed(4) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">纬度</span>
+              <span class="detail-value">{{ abnormalSelected.lat.toFixed(4) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">该地点案件量</span>
+              <span class="detail-value text-red-500 font-bold">{{ abnormalSelected.count }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">阈值</span>
+              <span class="detail-value">{{ abnormalSelected.threshold }}</span>
+            </div>
+          </div>
         </div>
       </div>
       <div v-if="loading" class="loading">地图加载中...</div>
@@ -80,11 +120,12 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, onBeforeUnmount, ref } from 'vue'
-  import { AdministrativeRegionManager } from '../../api/AdministrativeRegionmanager'
+  import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
+  import { useSettingStore } from '@stores/modules/setting'
+  import { AdministrativeRegionManager } from '../../api/administrative_regionmanager'
   import { ElRow, ElCol } from 'element-plus'
   import { hotmap } from '../../api'
-  import { MapLoader } from '../../api/mapLoader'
+  import { MapLoader } from '../../api/map_loader'
 
   // import LogService from '@/services/logServices'
   // const VITE_API_PROXY_PORT_URL = import.meta.env.VITE_API_PROXY_PORT_URL
@@ -101,10 +142,42 @@
   let map: any = null
   let heat: any = null
   let administrativeRegionManager: AdministrativeRegionManager | null = null
+  let abnormalMarkerLayer: any = null
+  let abnormalInfoWindow: any = null
+
+  // SVG data URI 生成工具（与 user-map.vue 保持一致）
+  const toSvgDataUri = (svg: string, color: string) =>
+    `data:image/svg+xml;utf8,${encodeURIComponent(
+      svg
+        .replace(/\n\s*/g, ' ')
+        .replace(/<svg /, `<svg style="color:${color}" `)
+    )}`
+
+  // 警告图标：红色三角中间白色感叹号
+  const warningIcon = toSvgDataUri(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+      <polygon points="16,2 30,28 2,28" fill="#ff4d4f" stroke="#cc0000" stroke-width="1"/>
+      <text x="16" y="24" text-anchor="middle" font-size="18" font-weight="bold" fill="#fff" font-family="Arial">!</text>
+    </svg>`,
+    '#fff'
+  )
 
   // 状态
+  const isDistrictsVisible = computed(() => administrativeRegionManager?.showingDistricts.value ?? false)
   const loading = ref(true)
   const error = ref('')
+  // 异常高亮点开关
+  const showAbnormal = ref(true)
+  // 当前选中的异常点
+  const abnormalSelected = ref<{ lng: number; lat: number; count: number; threshold: string } | null>(null)
+
+  // 主题色：跟随系统设置切换
+  const settingStore = useSettingStore()
+  const isDark = computed(() => settingStore.isDark)
+  const infoWindowBg = computed(() => isDark.value ? '#1f2937' : '#ffffff')
+  const infoWindowText = computed(() => isDark.value ? '#e5e7eb' : '#374151')
+  const infoWindowLabel = computed(() => isDark.value ? '#9ca3af' : '#6b7280')
+  const infoWindowAccent = computed(() => '#ff4d4f')
 
   // 进度追踪
   const progressPercent = ref(0)
@@ -112,6 +185,8 @@
   let progressTimer: ReturnType<typeof setInterval> | null = null
   // 上一次轮询时缓存中的数据量；用于判断后端是否合并了新批次
   let lastCachedCount = -1
+  // 标记刚刚点击了 marker,用于阻止同一 tick 内 map.on('click') 关闭详情
+  let suppressMapClick = false
 
   // 统计卡片默认数据（使用 remixicon 字体图标，不再依赖图片资源）
   const statsCards = ref([
@@ -274,6 +349,7 @@
         window.heatData = data
         if (heat) {
           heat.setData(window.heatData)
+          renderAbnormalMarkers(window.heatData)
         }
         lastCachedCount = res.cachedCount ?? data.length
       } else if (res.processing) {
@@ -287,11 +363,13 @@
           const data: any[] = (await hotmap.axiosRequestHeatMapData(params)) as any[]
           window.heatData = data
           heat.setData(window.heatData)
+          renderAbnormalMarkers(window.heatData)
         }
       } else {
         // 无需异步处理，使用 fetchHeatMap 中已获取的数据渲染
         if (heat && window.heatData) {
           heat.setData(window.heatData)
+          renderAbnormalMarkers(window.heatData)
         }
         if (progressTimer) {
           clearInterval(progressTimer)
@@ -371,6 +449,12 @@
       // 初始化行政区划管理器
       administrativeRegionManager = new AdministrativeRegionManager(map)
 
+      // 点击地图空白处关闭异常高值详情
+      map.on('click', () => {
+        if (suppressMapClick) return
+        abnormalSelected.value = null
+      })
+
       // 先初始化热力图，再加载数据
       initHeatMap()
       // fetchHeatMap() 内部已经 await fetchStatsCardsData()，无需在此重复调用
@@ -385,6 +469,92 @@
       loading.value = false
     }
   }
+
+  // ==================== 异常高亮点渲染 ====================
+  const renderAbnormalMarkers = (data: any[]) => {
+    console.log('[renderAbnormalMarkers] 调用', {
+      dataLen: data?.length,
+      showAbnormal: showAbnormal.value,
+      abnormalCount: data?.filter((d: any) => d.abnormal).length,
+      mapReady: !!map
+    })
+
+    if (abnormalMarkerLayer) {
+      abnormalMarkerLayer.setMap(null)
+      abnormalMarkerLayer = null
+    }
+    if (abnormalInfoWindow) {
+      abnormalInfoWindow.setMap(null)
+      abnormalInfoWindow = null
+    }
+    if (!showAbnormal.value) {
+      console.log('[renderAbnormalMarkers] 跳过：showAbnormal=false')
+      return
+    }
+
+    const abnormalData = data.filter((d: any) => d.abnormal)
+    console.log('[renderAbnormalMarkers] 异常数据点:', abnormalData)
+    if (!abnormalData.length || !map) {
+      console.log('[renderAbnormalMarkers] 跳过：数据为空或map未就绪', { abnormalLen: abnormalData.length, mapReady: !!map })
+      return
+    }
+
+    abnormalMarkerLayer = new window.TMap.MultiMarker({
+      id: 'abnormal-layer',
+      map,
+      styles: {
+        abnormal: new window.TMap.MarkerStyle({
+          width: 32,
+          height: 32,
+          anchor: { x: 16, y: 32 },
+          src: warningIcon
+        })
+      },
+      geometries: abnormalData.map((d: any, idx: number) => ({
+        id: `abnormal-${idx}`,
+        styleId: 'abnormal',
+        position: new window.TMap.LatLng(d.lat, d.lng),
+        properties: { count: d.count }
+      }))
+    })
+
+    abnormalMarkerLayer.on('click', (e: any) => {
+      e?.originalEvent?.stopPropagation?.()
+      e?.stopPropagation?.()
+      suppressMapClick = true
+      const { lat, lng } = e.geometry.position
+      const count = e.geometry.properties?.count ?? 0
+      abnormalSelected.value = { lng, lat, count, threshold: '> μ+2σ' }
+      setTimeout(() => { suppressMapClick = false }, 0)
+    })
+  }
+
+  // 切换异常高亮显示/隐藏
+  const toggleAbnormalMarkers = (show: boolean) => {
+    if (abnormalMarkerLayer) {
+      abnormalMarkerLayer.setMap(show ? map : null)
+    }
+  }
+
+  // showAbnormal 变化时：开关图层可见性；如果图层还没创建则立即用当前数据渲染
+  watch(showAbnormal, (val) => {
+    if (abnormalMarkerLayer) {
+      abnormalMarkerLayer.setMap(val ? map : null)
+    } else if (val && window.heatData?.length) {
+      renderAbnormalMarkers(window.heatData)
+    }
+  })
+
+  // 监听热力图数据变化，数据更新时重新渲染异常点标记
+  watch(
+    () => window.heatData,
+    (newData) => {
+      if (newData?.length && showAbnormal.value) {
+        renderAbnormalMarkers(newData)
+      }
+    },
+    { deep: true }
+  )
 
   // ==================== 初始化3D热力图 ====================
   const initHeatMap = () => {
@@ -409,6 +579,14 @@
     if (progressTimer) {
       clearInterval(progressTimer)
       progressTimer = null
+    }
+    if (abnormalMarkerLayer) {
+      abnormalMarkerLayer.setMap(null)
+      abnormalMarkerLayer = null
+    }
+    if (abnormalInfoWindow) {
+      abnormalInfoWindow.setMap(null)
+      abnormalInfoWindow = null
     }
     if (map) {
       map.destroy()
@@ -516,26 +694,37 @@
     border-radius: 8px;
   }
 
-  .district-icon-btn {
-    font-size: 20px;
-    pointer-events: none;
-  }
-
   .district-img-btn {
-    /* position: absolute; */
-    width: 25px;
-    height: 25px;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
     cursor: pointer;
-    transition: all 0.25s ease;
-    opacity: 0.85;
-    filter: brightness(0) invert(1);
+    transition: all 0.2s ease;
     flex-shrink: 0;
-    border: 1px solid #9ca3af;
-    /* 添加边框 */
-    border-radius: 4px;
-    /* 可选：添加圆角 */
-    padding: 4px;
-    /* 可选：添加内边距 */
+    background: var(--fs-toolbar-btn-bg);
+    border: 1px solid var(--fs-toolbar-btn-border);
+    border-radius: 8px;
+    color: var(--fs-toolbar-btn-color);
+    font-size: 16px;
+  }
+  .district-img-btn:hover {
+    background: var(--fs-toolbar-btn-hover-bg);
+    border-color: var(--fs-toolbar-btn-hover-border);
+    color: var(--fs-toolbar-btn-hover-color);
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  .district-img-btn.active {
+    background: var(--fs-bg-blue);
+    border-color: var(--fs-accent-border);
+    color: var(--fs-accent);
+    box-shadow: 0 0 10px var(--fs-accent-glow);
   }
 
   .loading,
@@ -571,32 +760,6 @@
     /* 添加底部间距 */
   }
 
-  .bottom-in-map {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    cursor: pointer;
-    background: rgba(59, 130, 246, 0.2);
-    border: 2px solid rgba(59, 130, 246, 0.5);
-    border-radius: 8px;
-    color: #60a5fa;
-    font-size: 20px;
-    transition: all 0.25s ease;
-  }
-  .bottom-in-map:hover {
-    background: rgba(59, 130, 246, 0.4);
-    border-color: #3b82f6;
-    color: #93c5fd;
-    transform: scale(1.1);
-    box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
-  }
-
   .custom-height {
     height: 100px;
   }
@@ -619,6 +782,131 @@
       padding-left: 4px;
       padding-right: 4px;
     }
+  }
+</style>
+
+<!-- 异常点详情面板样式（与汛期驾驶舱停车场面板同款） -->
+<style scoped>
+  .abnormal-detail-panel {
+    position: absolute;
+    top: 100px;
+    left: 12px;
+    width: 280px;
+    background: var(--fs-bg-panel, rgba(255,255,255,0.97));
+    border: 1px solid var(--fs-border-color, rgba(0,0,0,0.08));
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    z-index: 1000;
+    pointer-events: auto;
+    animation: abnormal-detail-in 0.2s ease-out;
+  }
+  @keyframes abnormal-detail-in {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .abnormal-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--fs-border-color, rgba(0,0,0,0.08));
+  }
+  .abnormal-detail-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ff4d4f;
+  }
+  .abnormal-detail-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--fs-text-secondary, #9ca3af);
+    border-radius: 4px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .abnormal-detail-close:hover {
+    background: rgba(0,0,0,0.06);
+    color: #ef4444;
+  }
+  .abnormal-detail-body {
+    padding: 10px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .detail-label {
+    color: var(--fs-text-secondary, #6b7280);
+    flex-shrink: 0;
+  }
+  .detail-value {
+    color: var(--fs-text-primary, #374151);
+    font-weight: 500;
+    text-align: right;
+    word-break: break-all;
+  }
+</style>
+
+<!-- 全局 CSS 变量：汛期驾驶舱工具栏按钮同款 -->
+<style>
+  :root {
+    --fs-toolbar-btn-bg: rgba(55, 65, 81, 0.6);
+    --fs-toolbar-btn-border: rgba(156, 163, 175, 0.15);
+    --fs-toolbar-btn-color: #9ca3af;
+    --fs-toolbar-btn-hover-bg: rgba(75, 85, 99, 0.8);
+    --fs-toolbar-btn-hover-border: rgba(156, 163, 175, 0.3);
+    --fs-toolbar-btn-hover-color: #f3f4f6;
+    --fs-bg-blue: rgba(59, 130, 246, 0.2);
+    --fs-accent: #60a5fa;
+    --fs-accent-border: rgba(96, 165, 250, 0.3);
+    --fs-accent-glow: rgba(96, 165, 250, 0.25);
+    --fs-bg-panel: rgba(17, 17, 17, 0.85);
+    --fs-border-color: rgba(255, 255, 255, 0.1);
+    --fs-text-primary: #e5e7eb;
+    --fs-text-secondary: #9ca3af;
+  }
+  html.dark {
+    --fs-toolbar-btn-bg: rgba(55, 65, 81, 0.6);
+    --fs-toolbar-btn-border: rgba(156, 163, 175, 0.15);
+    --fs-toolbar-btn-color: #9ca3af;
+    --fs-toolbar-btn-hover-bg: rgba(75, 85, 99, 0.8);
+    --fs-toolbar-btn-hover-border: rgba(156, 163, 175, 0.3);
+    --fs-toolbar-btn-hover-color: #f3f4f6;
+    --fs-bg-blue: rgba(59, 130, 246, 0.2);
+    --fs-accent: #60a5fa;
+    --fs-accent-border: rgba(96, 165, 250, 0.3);
+    --fs-accent-glow: rgba(96, 165, 250, 0.25);
+    --fs-bg-panel: rgba(17, 17, 17, 0.85);
+    --fs-border-color: rgba(255, 255, 255, 0.1);
+    --fs-text-primary: #e5e7eb;
+    --fs-text-secondary: #9ca3af;
+  }
+  html:not(.dark) {
+    --fs-toolbar-btn-bg: rgba(255, 255, 255, 0.8);
+    --fs-toolbar-btn-border: rgba(0, 0, 0, 0.08);
+    --fs-toolbar-btn-color: #6b7280;
+    --fs-toolbar-btn-hover-bg: rgba(59, 130, 246, 0.1);
+    --fs-toolbar-btn-hover-border: rgba(59, 130, 246, 0.25);
+    --fs-toolbar-btn-hover-color: #3b82f6;
+    --fs-bg-blue: rgba(59, 130, 246, 0.08);
+    --fs-accent: #3b82f6;
+    --fs-accent-border: rgba(59, 130, 246, 0.25);
+    --fs-accent-glow: rgba(59, 130, 246, 0.15);
+    --fs-bg-panel: rgba(255, 255, 255, 0.97);
+    --fs-border-color: rgba(0, 0, 0, 0.08);
+    --fs-text-primary: #374151;
+    --fs-text-secondary: #6b7280;
   }
 </style>
 

@@ -13,7 +13,7 @@ export const resourceRoutes: AppRouteRecord = {
     {
       path: 'index',
       name: 'ResourceIndex',
-      component: '/test/pages/test-index',
+      component: '/test/pages/test_index',
       meta: {
         title: 'menus.resource.title',
         keepAlive: false

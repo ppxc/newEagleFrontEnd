@@ -11,9 +11,9 @@ export const managementRoutes: AppRouteRecord = {
   },
   children: [
     {
-      path: 'car-cockpit',
+      path: 'car_cockpit',
       name: 'CarCockpit',
-      component: '/management/pages/car-cockpit',
+      component: '/management/pages/car_cockpit',
       meta: {
         title: 'menus.management.carCockpit',
         keepAlive: false,
@@ -21,9 +21,9 @@ export const managementRoutes: AppRouteRecord = {
       }
     },
     {
-      path: 'non-car-cockpit',
+      path: 'non_car_cockpit',
       name: 'NonCarCockpit',
-      component: '/management/pages/non-car-cockpit',
+      component: '/management/pages/non_car_cockpit',
       meta: {
         title: 'menus.management.nonCarCockpit',
         keepAlive: false,
@@ -31,9 +31,9 @@ export const managementRoutes: AppRouteRecord = {
       }
     },
     {
-      path: 'flood-season',
+      path: 'flood_season',
       name: 'FloodSeasonCockpit',
-      component: '/management/pages/flood-season',
+      component: '/management/pages/flood_season',
       meta: {
         title: 'menus.management.floodSeason',
         keepAlive: false,

@@ -13,7 +13,7 @@ export const dashboardRoutes: AppRouteRecord = {
     {
       path: 'personalmap',
       name: 'PersonalMap',
-      component: '/lpmap/pages/children/user-map',
+      component: '/lpmap/pages/children/user_map',
       meta: {
         title: 'menus.dashboard.personalmap',
         keepAlive: false,

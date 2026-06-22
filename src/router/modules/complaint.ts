@@ -13,7 +13,7 @@ export const complaintRoutes: AppRouteRecord = {
     {
       path: 'index',
       name: 'ComplaintIndex',
-      component: '/test/pages/test-index',
+      component: '/test/pages/test_index',
       meta: {
         title: 'menus.complaint.title',
         keepAlive: false

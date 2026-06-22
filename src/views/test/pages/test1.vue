@@ -33,24 +33,22 @@
         v-model:columns="columnChecks"
         :loading="loading"
         @refresh="handleRefresh"
-        layout="refresh,size,fullscreen,columns,settings,search"
+        layout="refresh,size,fullscreen,columns,settings"
         fullClass="art-table-card"
       >
         <template #left>
           <ElSpace wrap>
-            <ElDropdown split-button type="primary" @click="handleExportAll" v-ripple>
-              <ElIcon>
-                <Download />
-              </ElIcon>
-              导出全表
-              <template #dropdown>
-                <ElDropdownMenu>
-                  <!-- <ElDropdownItem @click="handleExportAll">导出全部</ElDropdownItem> -->
-                  <ElDropdownItem @click="handleExportCurrent">仅导出当前页</ElDropdownItem>
-                  
-                </ElDropdownMenu>
-              </template>
-            </ElDropdown>
+
+            <!-- 导出功能 -->
+            <ArtExcelExport
+              :data="data as any"
+              :columns="exportColumns as any"
+              filename="理赔案件周期统计表"
+              :auto-index="true"
+              button-text="导出"
+              @export-success="handleExportSuccess"
+            />
+
           </ElSpace>
         </template>
       </ArtTableHeader>
@@ -81,114 +79,127 @@
         </template>
 
         <!-- 查勘周期列 -->
-        <template #surveyCycle="{ row }">
-          <span>{{ row.surveyCycle }}天</span>
+        <template #investigationCycle="{ row }">
+          <span>{{ row.investigationCycle }}天</span>
         </template>
 
         <!-- 催定周期列 -->
-        <template #urgeDetermineCycle="{ row }">
-          <span>{{ row.urgeDetermineCycle }}天</span>
+        <template #urgingCycle="{ row }">
+          <span>{{ row.urgingCycle }}天</span>
         </template>
 
         <!-- 定损周期列 -->
-        <template #determineCycle="{ row }">
-          <span>{{ row.determineCycle }}天</span>
+        <template #assessmentCycle="{ row }">
+          <span>{{ row.assessmentCycle }}天</span>
         </template>
 
         <!-- 定损完成-支付周期列 -->
-        <template #determineToPay="{ row }">
-          <span>{{ row.determineToPay }}天</span>
+        <template #paymentCycle="{ row }">
+          <span>{{ row.paymentCycle }}天</span>
         </template>
 
         <!-- 整体结案周期列 -->
-        <template #totalCloseCycle="{ row }">
-          <span>{{ row.totalCloseCycle }}天</span>
+        <template #caseClosureCycle="{ row }">
+          <span>{{ row.caseClosureCycle }}天</span>
         </template>
 
         <!-- 万元内案件结案周期列 -->
-        <template #under10kCloseCycle="{ row }">
-          <span>{{ row.under10kCloseCycle !== null ? row.under10kCloseCycle + '天' : '-' }}</span>
+        <template #underTenThousandCycle="{ row }">
+          <span>{{ row.underTenThousandCycle }}天</span>
         </template>
 
         <!-- 万元以上案件结案周期列 -->
-        <template #over10kCloseCycle="{ row }">
-          <span>{{ row.over10kCloseCycle !== null ? row.over10kCloseCycle + '天' : '-' }}</span>
+        <template #overTenThousandCycle="{ row }">
+          <span>{{ row.overTenThousandCycle }}天</span>
         </template>
+
       </ArtTable>
     </ElCard>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, watch } from 'vue'
-  import {
-    Download,
-    Refresh
-  } from '@element-plus/icons-vue'
-  import { ElMessageBox, ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
-  import { useTableStore } from '@/store/modules/table'
-  import { ColumnOption } from '@/types'
-  import * as XLSX from 'xlsx'
-  import axios from 'axios'
+  import { ref, computed, watch, nextTick } from 'vue'
+  import { useTable, CacheInvalidationStrategy } from '@/hooks/core/useTable'
 
-  defineOptions({ name: 'PeriodicReportTable' })
+
+  defineOptions({ name: 'ClaimsCycleStatisticsTable' })
 
   // 定义表格数据类型
-  interface PeriodicReportData {
+  interface ClaimsCycleData {
     id: number
     cityCompany: string
-    surveyCycle: number
-    urgeDetermineCycle: number
-    determineCycle: number
-    determineToPay: number
-    totalCloseCycle: number
-    under10kCloseCycle: number | null
-    over10kCloseCycle: number | null
+    investigationCycle: number
+    urgingCycle: number
+    assessmentCycle: number
+    paymentCycle: number
+    caseClosureCycle: number
+    underTenThousandCycle: number
+    overTenThousandCycle: number
   }
+
+  // 选中的行
+  const selectedRows = ref<ClaimsCycleData[]>([])
+
+  // 表格实例引用
+  const tableRef = ref()
 
   // 搜索表单 ref
   const searchBarRef = ref()
 
   // 校验规则
   const rules = {
-    queryDate: [{ required: false, message: '请选择查询日期', trigger: 'change' }]
+    cityCompany: [{ required: false, message: '请输入市公司', trigger: 'blur' }],
   }
 
   // 表单搜索初始值
   const searchFormState = ref({
-    queryDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    cityCompany: ''
+    cityCompany: '',
+    investigationCycle: '',
+    assessmentCycle: '',
+    caseClosureCycle: ''
   })
 
   // 搜索表单配置
   const searchItems = computed(() => [
     {
-      key: 'queryDate',
-      label: '查询日期',
-      type: 'date',
-      props: {
-        placeholder: '选择查询日期',
-        valueFormat: 'YYYY-MM-DD'
-      }
-    },
-    {
       key: 'cityCompany',
       label: '市公司',
       type: 'input',
       props: {
-        placeholder: '请输入市公司名称'
+        placeholder: '请输入市公司'
+      }
+    },
+    {
+      key: 'investigationCycle',
+      label: '查勘周期',
+      type: 'input',
+      props: {
+        placeholder: '请输入查勘周期(天)'
+      }
+    },
+    {
+      key: 'assessmentCycle',
+      label: '定损周期',
+      type: 'input',
+      props: {
+        placeholder: '请输入定损周期(天)'
+      }
+    },
+    {
+      key: 'caseClosureCycle',
+      label: '整体结案周期',
+      type: 'input',
+      props: {
+        placeholder: '请输入整体结案周期(天)'
       }
     }
   ])
 
-  // 表格实例引用
-  const tableRef = ref()
-
-  // 表格配置
+  // 表格配置演示
   const tableConfig = ref({
     height: '100%',
-    fixedHeight: false
+    fixedHeight: false // 新增：是否固定高度的开关
   })
 
   // 计算实际的表格高度
@@ -202,140 +213,142 @@
     loading,
     error,
     pagination,
-    refreshData,
-    handleSizeChange,
-    handleCurrentChange,
-    columns,
-    columnChecks
-  } = useTable<PeriodicReportData>({
-    core: {
-      apiFn: async ({ current, size, ...params }) => {
-        // 构建查询参数
-        const queryParams: Record<string, any> = {
-          current,
-          size,
-          queryDate: params.queryDate || new Date().toISOString().split('T')[0],
-          cityCompany: params.cityCompany || ''
-        }
+    refresh: refreshData,
+  } = useTable<ClaimsCycleData>({
+    apiFn: async ({ current, size, ...params }) => {
+      // 模拟数据 - 在实际项目中替换为真实的API调用
+      let mockData: ClaimsCycleData[] = Array.from({ length: 50 }, (_, index) => ({
+        id: index + 1,
+        cityCompany: `第${index + 1}市公司`,
+        investigationCycle: Math.floor(Math.random() * 10) + 1,
+        urgingCycle: Math.floor(Math.random() * 5) + 1,
+        assessmentCycle: Math.floor(Math.random() * 7) + 1,
+        paymentCycle: Math.floor(Math.random() * 5) + 1,
+        caseClosureCycle: Math.floor(Math.random() * 20) + 1,
+        underTenThousandCycle: Math.floor(Math.random() * 15) + 1,
+        overTenThousandCycle: Math.floor(Math.random() * 30) + 1
+      }))
 
-        // 发送请求到后端 - 与table_cs.vue保持一致
-        const response = await axios.get('http://localhost:8080/zyxt/api/aaa/list', {
-          params: { queryTime: queryParams.queryDate }
-        })
+      // 根据搜索条件过滤数据
+      if (params.cityCompany) {
+        mockData = mockData.filter(item => item.cityCompany.includes(params.cityCompany))
+      }
+      if (params.investigationCycle) {
+        mockData = mockData.filter(item => item.investigationCycle.toString().includes(params.investigationCycle))
+      }
+      if (params.assessmentCycle) {
+        mockData = mockData.filter(item => item.assessmentCycle.toString().includes(params.assessmentCycle))
+      }
+      if (params.caseClosureCycle) {
+        mockData = mockData.filter(item => item.caseClosureCycle.toString().includes(params.caseClosureCycle))
+      }
 
-        // 后端返回的是数组形式的数据，需要包装成分页格式
-        const allData = response.data
-        const start = (current - 1) * size
-        const end = start + size
-        const paginatedData = allData.slice(start, end)
-        
-        return {
-          records: paginatedData,
-          total: allData.length,
-          current,
-          size
-        }
-      },
-      
-      apiParams: {
-        current: 1,
-        size: 20,
-        ...searchFormState.value
-      },
-      immediate: true,
-      columnsFactory: () => [
-        // {
-        //   type: 'selection',
-        //   width: 50,
-        //   align: 'center'
-        // },
-        {
-          prop: 'id',
-          label: '序号',
-          minWidth: 50,
-          align: 'center',
-          fixed: 'left',  //fixed 固定列，无法拖动
+      // 分页逻辑
+      const start = (current - 1) * size
+      const end = start + size
+      const paginatedData = mockData.slice(start, end)
 
-        },
-        {
-          prop: 'cityCompany',
-          label: '市公司',
-          minWidth: 200,
-          align: 'center',
-          fixed: 'left' ,//fixed 固定列，无法拖动
-          // filterMethod: (value: string, row: any) => {
-          // // 只显示城市名称包含指定值的行
-          // return row.cityCompany.includes(value);
-        // }
-        },
-        {
-          prop: 'surveyCycle',
-          label: '查勘周期(天)',
-          minWidth: 130, 
-          align: 'center',
-          sortable: true
-        },
-        {
-          prop: 'urgeDetermineCycle',
-          label: '催定周期(天)',
-          minWidth: 130, 
-          align: 'center',
-          sortable: true
-        },
-        {
-          prop: 'determineCycle',
-          label: '定损周期(天)',
-          minWidth: 130, 
-          align: 'center',
-          sortable: true
-        },
-        {
-          prop: 'determineToPay',
-          label: '定损完成-支付(天)',
-          minWidth: 150, 
-          align: 'center',
-          sortable: true
-        },
-        {
-          prop: 'totalCloseCycle',
-          label: '整体结案周期(天)',
-          minWidth: 150, 
-          align: 'center', 
-          sortable: true
-        },
-        {
-          prop: 'under10kCloseCycle',
-          label: '万元内案件结案周期(天)',
-          minWidth: 200, 
-          align: 'center',
-          sortable: true
-        },
-        {
-          prop: 'over10kCloseCycle',
-          label: '万元以上案件结案周期(天)',
-          minWidth: 200, 
-          align: 'center',
-          sortable: true
-        }
-      ]
+      return {
+        data: paginatedData,
+        total: mockData.length,
+        current,
+        size
+      }
     },
-    performance: {
-      enableCache: true,
-      cacheTime: 5 * 60 * 1000, // 缓存5分钟
-      debounceTime: 300,
-      maxCacheSize: 100
-    }
+    defaultParams: {
+      current: 1,
+      size: 20,
+      ...searchFormState.value
+    },
+    cacheTime: 5 * 60 * 1000, // 缓存5分钟
+    staleTime: 60 * 1000 // 1分钟后数据被视为陈旧
   })
 
-  // 选中的行
-  const selectedRows = ref<PeriodicReportData[]>([])
+  // 表格列配置
+  const columns = ref([
+    {
+      type: 'selection',
+      width: 50,
+      align: 'center'
+    },
+    {
+      prop: 'index',
+      label: '序号',
+      width: 80,
+      align: 'center',
+      fixed: 'left'
+    },
+    {
+      prop: 'cityCompany',
+      label: '市公司',
+      minWidth: 150,
+      align: 'center',
+      fixed: 'left'
+    },
+    {
+      prop: 'investigationCycle',
+      label: '查勘周期(天)',
+      width: 120,
+      align: 'center'
+    },
+    {
+      prop: 'urgingCycle',
+      label: '催定周期(天)',
+      width: 120,
+      align: 'center'
+    },
+    {
+      prop: 'assessmentCycle',
+      label: '定损周期(天)',
+      width: 120,
+      align: 'center'
+    },
+    {
+      prop: 'paymentCycle',
+      label: '定损完成-支付(天)',
+      width: 150,
+      align: 'center'
+    },
+    {
+      prop: 'caseClosureCycle',
+      label: '整体结案周期(天)',
+      width: 140,
+      align: 'center'
+    },
+    {
+      prop: 'underTenThousandCycle',
+      label: '万元内案件结案周期(天)',
+      width: 180,
+      align: 'center'
+    },
+    {
+      prop: 'overTenThousandCycle',
+      label: '万元以上案件结案周期(天)',
+      width: 200,
+      align: 'center'
+    }
+  ])
+
+  // 用于列显示/隐藏的配置
+  const columnChecks = ref(
+    columns.value.map((col) => ({
+      key: col.prop,
+      label: col.label,
+      visible: true
+    }))
+  )
+
+  // 导出列配置
+  const exportColumns = computed(() => {
+    return columns.value.filter(col => col.prop !== 'index')
+  })
 
   // 事件处理函数
-  const handleSelectionChange = (rows: PeriodicReportData[]) => {
+  const handleSelectionChange = (rows: ClaimsCycleData[]) => {
     selectedRows.value = rows
   }
 
-  const handleRowClick = (row: PeriodicReportData) => {
+  const handleRowClick = (row: ClaimsCycleData) => {
     // console.log('Row clicked:', row)
   }
 
@@ -347,6 +360,16 @@
     // console.log('Sort changed:', sortInfo)
   }
 
+  const handleSizeChange = (size: number) => {
+    pagination.size = size
+    refreshData()
+  }
+
+  const handleCurrentChange = (current: number) => {
+    pagination.current = current
+    refreshData()
+  }
+
   const handleRefresh = () => {
     refreshData()
   }
@@ -354,127 +377,98 @@
   const handleSearch = async () => {
     await searchBarRef.value.validate()
     // console.log('搜索参数:', searchFormState.value)
+    // 更新API参数并重新获取数据
     refreshData()
   }
 
   const handleReset = () => {
     // 重置搜索表单状态
     searchFormState.value = {
-      queryDate: new Date().toISOString().split('T')[0],
-      cityCompany: ''
+      cityCompany: '',
+      investigationCycle: '',
+      assessmentCycle: '',
+      caseClosureCycle: ''
     }
     refreshData()
   }
 
-  // 导出当前页数据
-  const handleExportCurrent = async () => {
-    if (!data.value || data.value.length === 0) {
-      ElNotification({
-        title: '提示',
-        message: '暂无数据可导出',
-        type: 'warning'
-      })
-      return
-    }
-
-    const exportData = data.value.map((item, index) => ({
-      '序号': index + 1,
-      '市公司': item.cityCompany,
-      '查勘周期(天)': item.surveyCycle,
-      '催定周期(天)': item.urgeDetermineCycle,
-      '定损周期(天)': item.determineCycle,
-      '定损完成-支付(天)': item.determineToPay,
-      '整体结案周期(天)': item.totalCloseCycle,
-      '万元内案件结案周期(天)': item.under10kCloseCycle !== null ? item.under10kCloseCycle : '-',
-      '万元以上案件结案周期(天)': item.over10kCloseCycle !== null ? item.over10kCloseCycle : '-'
-    }))
-
-    const ws = XLSX.utils.json_to_sheet(exportData)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, '四川省周期报表')
-    
-    // 生成当前时间戳格式的文件名 YYYYMMDD_HHMMSS
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const day = String(now.getDate()).padStart(2, '0')
-    const hours = String(now.getHours()).padStart(2, '0')
-    const minutes = String(now.getMinutes()).padStart(2, '0')
-    const seconds = String(now.getSeconds()).padStart(2, '0')
-    
-    const fileName = `四川省周期报表_当前页_${year}${month}${day}_${hours}${minutes}${seconds}.xlsx`
-    XLSX.writeFile(wb, fileName)
-    
-    ElNotification({
-      title: '成功',
-      message: '当前页数据导出成功',
-      type: 'success'
-    })
+  // 操作按钮处理函数
+  const handleAdd = () => {
+    ElMessage.success('新增记录成功')
+    // refreshCreate()
   }
 
-  // 导出全部数据
-  const handleExportAll = async () => {
+  const handleEdit = (row: ClaimsCycleData) => {
+    ElMessage.success(`编辑记录 ${row.cityCompany} 成功`)
+    // setTimeout(() => {
+    //   refreshUpdate()
+    // }, 1000)
+  }
+
+  const handleDelete = async (row: ClaimsCycleData) => {
     try {
-      // 获取全部数据，需要调用API获取所有记录
-      const response = await axios.get('http://localhost:8080/zyxt/api/aaa/list', {
-        params: { queryTime: searchFormState.value.queryDate }
+      await ElMessageBox.confirm(`确定要删除 ${row.cityCompany} 的记录吗？`, '警告', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
       })
 
-      if (!response.data || response.data.length === 0) {
-        ElNotification({
-          title: '提示',
-          message: '暂无数据可导出',
-          type: 'warning'
-        })
-        return
-      }
-
-      const allData = response.data
-      const exportData = allData.map((item, index) => ({
-        '序号': index + 1,
-        '市公司': item.cityCompany,
-        '查勘周期(天)': item.surveyCycle,
-        '催定周期(天)': item.urgeDetermineCycle,
-        '定损周期(天)': item.determineCycle,
-        '定损完成-支付(天)': item.determineToPay,
-        '整体结案周期(天)': item.totalCloseCycle,
-        '万元内案件结案周期(天)': item.under10kCloseCycle !== null ? item.under10kCloseCycle : '-',
-        '万元以上案件结案周期(天)': item.over10kCloseCycle !== null ? item.over10kCloseCycle : '-'
-      }))
-
-      const ws = XLSX.utils.json_to_sheet(exportData)
-      const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, '四川省周期报表')
-      
-      // 生成当前时间戳格式的文件名 YYYYMMDD_HHMMSS
-      const now = new Date()
-      const year = now.getFullYear()
-      const month = String(now.getMonth() + 1).padStart(2, '0')
-      const day = String(now.getDate()).padStart(2, '0')
-      const hours = String(now.getHours()).padStart(2, '0')
-      const minutes = String(now.getMinutes()).padStart(2, '0')
-      const seconds = String(now.getSeconds()).padStart(2, '0')
-      
-      const fileName = `四川省周期报表_全部_${year}${month}${day}_${hours}${minutes}${seconds}.xlsx`
-      XLSX.writeFile(wb, fileName)
-      
-      ElNotification({
-        title: '成功',
-        message: `${allData.length} 条数据导出成功`,
-        type: 'success'
-      })
-    } catch (error) {
-      console.error('导出全部数据失败:', error)
-      ElNotification({
-        title: '错误',
-        message: '导出全部数据失败，请重试',
-        type: 'error'
-      })
+      ElMessage.success('删除成功')
+      // setTimeout(() => {
+      //   refreshRemove()
+      // }, 1000)
+    } catch {
+      ElMessage.info('已取消删除')
     }
+  }
+
+  const handleView = (row: ClaimsCycleData) => {
+    ElMessage.info(`查看记录 ${row.cityCompany}`)
+  }
+
+  // 导出功能
+  const handleExportSuccess = (filename: string, count: number) => {
+    ElMessage.success(`导出 ${count} 条数据成功`)
+  }
+
+  // 数据清理
+  const handleClearData = () => {
+    // clearData()
+    ElMessage.info('数据已清空')
+  }
+
+  // 刷新策略
+  const refreshSoft = () => {
+    // refreshSoft()
+  }
+
+  const refreshCreate = () => {
+    // refreshCreate()
+  }
+
+  const refreshUpdate = () => {
+    // refreshUpdate()
+  }
+
+  const refreshRemove = () => {
+    // refreshRemove()
   }
 </script>
 
 <style scoped>
+  .user-info .el-avatar {
+    flex-shrink: 0;
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .user-info .el-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
   .custom-header:hover {
     color: var(--el-color-primary-light-3);
   }

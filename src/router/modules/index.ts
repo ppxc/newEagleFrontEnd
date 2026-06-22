@@ -20,7 +20,7 @@ export const routeModules: AppRouteRecord[] = [
 
     dashboardRoutes,
     managementRoutes,
-    efficiencyRoutes,
+    ...efficiencyRoutes,
     // costRoutes,
     complaintRoutes,
     resourceRoutes,
