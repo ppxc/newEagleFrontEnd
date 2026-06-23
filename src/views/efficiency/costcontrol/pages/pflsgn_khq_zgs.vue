@@ -7,7 +7,7 @@
       :rules="rules"
      
      
-      :show-expand="false" :show-reset-button="true"
+      :is-expand="true" :show-expand="false" :show-reset-button="true"
       :show-search-button="true"
       :disabled-search-button="false"
       @search="handleSearch"
@@ -17,7 +17,7 @@
     <ElCard class="flex-1 art-table-card" style="margin-top: 0;padding: 5px;">
       <template #header>
         <div class="flex-cb">
-          <h4 class="m-0">事故年赔付率-新能源【统计时间：{{ currentMaxTjTime }}】</h4>
+          <h4 class="m-0">事故年赔付率-支公司-客户群【统计时间：{{ currentMaxTjTime }}】</h4>
           <div class="flex gap-1">
             <ElTag v-if="tableError" type="danger">{{ tableError.message }}</ElTag>
             <ElTag v-else-if="loading" type="warning">加载中...</ElTag>
@@ -76,65 +76,41 @@
   import * as XLSX from 'xlsx'
   import { accidentYearLossRate } from '../../api'
 
-  defineOptions({ name: 'PflsgnXnyTable' })
+  defineOptions({ name: 'PflsgnKhqZgsTable' })
 
-  // ==================== 1. 类型定义 ====================
-  interface PflsgnXnyData {
+  interface PflsgnKhqZgsData {
     id: number | null | undefined
     tjDate: string | null
-    comcodeSgs: string
     comnameSgs: string
-    xnyflag: string
-    sumpaidYh: number
-    sumpaidWh: number
-    sumpaidHj: number
-    yzbf19: number
+    comname: string
+    khq: string
+    sumpaidYh: number | null
+    sumpaidWh: number | null
+    sumpaidHj: number | null
+    yzbf19: number | null
     sgndPfl: string
     pflTb: string
-    yjAjl: number
-    wjAjl: number
-    ajl: number
-    yzbd: number
+    yjAjl: number | null
+    wjAjl: number | null
+    ajl: number | null
+    yzbd: number | null
     clv: string
     clvTb: string
-    yhaj: number
-    whaj: number
-    bgaj: number
+    yhaj: number | null
+    whaj: number | null
+    bgaj: number | null
     bgajTb: string
-    djyz: number
+    djyz: number | null
     djyzTb: string
-    yjCs: number
-    yjRs: number
-    yjWs: number
-    csAjl: number
-    rsAjl: number
-    wsAjl: number
-    csYjaj: number
-    rsYjaj: number
-    wsYjaj: number
-    sumpaidYhQn: number
-    sumpaidWhQn: number
-    sumpaidHjQn: number
-    yzbf19Qn: number
-    sgndPflQn: string
-    yjAjlQn: number
-    wjAjlQn: number
-    ajlQn: number
-    yzbdQn: number
-    clvQn: string
-    yhajQn: number
-    whajQn: number
-    bgajQn: number
-    djyzQn: number
-    yjCsQn: number
-    yjRsQn: number
-    yjWsQn: number
-    csAjlQn: number
-    rsAjlQn: number
-    wsAjlQn: number
-    csYjajQn: number
-    rsYjajQn: number
-    wsYjajQn: number
+    yjCs: number | null
+    yjRs: number | null
+    yjWs: number | null
+    csAjl: number | null
+    rsAjl: number | null
+    wsAjl: number | null
+    csYjaj: number | null
+    rsYjaj: number | null
+    wsYjaj: number | null
     maxTjTime: string | null
   }
 
@@ -142,54 +118,59 @@
   interface UseTableParams { current: number; size: number; [key: string]: any }
   interface UseTableResult<T> { records: T[]; total: number; current: number; size: number }
 
-  // ==================== 2. 常量 ====================
   const tableHeight = 'calc(100vh - 330px)'
   const DEFAULT_PAGINATION = { current: 1, size: 20 }
-  const DEFAULT_FORM = { tjDate: '', comnameSgs: '' }
+  const DEFAULT_FORM = { tjDate: '', comnameSgs: '', comname: '', khq: '' }
 
-  // ==================== 3. 状态 ====================
   const searchBarRef = ref<any>(null)
   const currentMaxTjTime = ref<string>('')
   let isInitialized = false
   const comOptions = ref<SelectOption[]>([])
+  const zgsOptions = ref<SelectOption[]>([])
+  const khqOptions = ref<SelectOption[]>([])
 
-  // ==================== 4. 搜索表单 ====================
   const rules = { tjDate: [{ required: false, message: '请选择统计时间', trigger: 'change' }] }
   const searchFormState = ref({ ...DEFAULT_FORM })
   const tableApiParams = ref({ ...DEFAULT_PAGINATION, ...searchFormState.value })
 
   const searchItems = computed(() => [
-    { key: 'tjDate', label: '统计时间', type: 'date', props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' } },
-    { key: 'comnameSgs', label: '市公司', type: 'select', props: { placeholder: '请选择市公司', options: comOptions.value, clearable: true } }
+    { key: 'tjDate', label: '统计时间', type: 'date', span: 5, props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' } },
+    { key: 'comnameSgs', label: '市公司', type: 'select', span: 5, props: { placeholder: '请选择市公司', options: comOptions.value, clearable: true } },
+    { key: 'comname', label: '支公司', type: 'select', span: 5, props: { placeholder: '请选择支公司', options: zgsOptions.value, clearable: true } },
+    { key: 'khq', label: '客户群', type: 'select', span: 5, props: { placeholder: '请选择客户群', options: khqOptions.value, clearable: true } }
   ])
 
-  // ==================== 5. 构建下拉 ====================
-  const buildDeptOptions = (data: PflsgnXnyData[]) => {
-    if (comOptions.value.length) return
+  const buildDeptOptions = (data: PflsgnKhqZgsData[]) => {
+    if (comOptions.value.length && zgsOptions.value.length && khqOptions.value.length) return
     const comSet = new Set<string>()
-    data.forEach((item) => { if (item.comnameSgs) comSet.add(item.comnameSgs) })
+    const zgsSet = new Set<string>()
+    const khqSet = new Set<string>()
+    data.forEach((item) => {
+      if (item.comnameSgs) comSet.add(item.comnameSgs)
+      if (item.comname) zgsSet.add(item.comname)
+      if (item.khq) khqSet.add(item.khq)
+    })
     comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-    ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司`, type: 'success' })
+    zgsOptions.value = Array.from(zgsSet).map((name) => ({ label: name, value: name }))
+    khqOptions.value = Array.from(khqSet).map((name) => ({ label: name, value: name }))
+    ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司 / ${zgsOptions.value.length} 个支公司 / ${khqOptions.value.length} 个客户群`, type: 'success' })
   }
 
-  // ==================== 6. 表格 Hook ====================
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, columns, columnChecks } = useTable({
     core: {
-      apiFn: async (params: UseTableParams): Promise<UseTableResult<PflsgnXnyData>> => {
+      apiFn: async (params: UseTableParams): Promise<UseTableResult<PflsgnKhqZgsData>> => {
         const queryParams = {
           current: params.current, size: params.size,
           tjDate: tableApiParams.value.tjDate || '',
-          comnameSgs: tableApiParams.value.comnameSgs ?? ''
+          comnameSgs: tableApiParams.value.comnameSgs ?? '',
+          comname: tableApiParams.value.comname ?? '',
+          khq: tableApiParams.value.khq ?? ''
         }
-        // 后端 /page 端点直接返回 { records, total, current, size }
-        const response = await accidentYearLossRate.axiosRequestPflsgnXnyPage(queryParams)
-        const page = (response ?? {}) as UseTableResult<PflsgnXnyData>
+        const response = await accidentYearLossRate.axiosRequestPflsgnKhqZgsPage(queryParams)
+        const page = (response ?? {}) as UseTableResult<PflsgnKhqZgsData>
         const records = page.records || []
         if (records.length) {
-          if (!isInitialized) {
-            buildDeptOptions(records)
-            isInitialized = true
-          }
+          if (!isInitialized) { buildDeptOptions(records); isInitialized = true }
           currentMaxTjTime.value = records[0].maxTjTime || ''
           if (!searchFormState.value.tjDate && records[0].maxTjTime) {
             searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10)
@@ -201,7 +182,8 @@
       immediate: true,
       columnsFactory: () => [
         { prop: 'comnameSgs', label: '市公司', minWidth: 200, align: 'center', fixed: 'left', sortable: true },
-        { prop: 'xnyflag', label: '能源类型', width: 120, align: 'center', fixed: 'left', sortable: true },
+        { prop: 'comname', label: '支公司', minWidth: 200, align: 'center', fixed: 'left', sortable: true },
+        { prop: 'khq', label: '客户群', width: 120, align: 'center', fixed: 'left', sortable: true },
         { prop: 'sumpaidYh', label: '已核赔款(元)', width: 140, align: 'center', sortable: true },
         { prop: 'sumpaidWh', label: '未核赔款(元)', width: 140, align: 'center', sortable: true },
         { prop: 'sumpaidHj', label: '赔款合计(元)', width: 140, align: 'center', sortable: true },
@@ -234,22 +216,13 @@
     performance: { enableCache: true, cacheTime: 5 * 60 * 1000, debounceTime: 300, maxCacheSize: 100 }
   })
 
-  // ==================== 7. 操作 ====================
-  const localHandleCurrentChange = (newCurrent: number) => {
-    fetchData({ current: newCurrent })
-  }
-
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
-  }
+  const localHandleCurrentChange = (newCurrent: number) => { fetchData({ current: newCurrent }) }
+  const localHandleSizeChange = (newSize: number) => { fetchData({ size: newSize, current: 1 }) }
 
   const handleRefresh = async () => {
     try {
-      const res = await accidentYearLossRate.axiosRequestPflsgnXny({ current: 1, size: 9999 })
-      if (Array.isArray(res) && res.length) {
-        buildDeptOptions(res)
-        currentMaxTjTime.value = res[0].maxTjTime || ''
-      }
+      const res = await accidentYearLossRate.axiosRequestPflsgnKhqZgs({ current: 1, size: 9999 })
+      if (Array.isArray(res) && res.length) { buildDeptOptions(res); currentMaxTjTime.value = res[0].maxTjTime || '' }
       await fetchData()
     } catch { await fetchData() }
   }
@@ -268,9 +241,8 @@
     refreshData()
   }
 
-  // ==================== 8. 导出 ====================
-  const exportColumns = (item: PflsgnXnyData, index: number) => ({
-    序号: index + 1, 市公司: item.comnameSgs, 能源类型: item.xnyflag,
+  const exportColumns = (item: PflsgnKhqZgsData, index: number) => ({
+    序号: index + 1, 市公司: item.comnameSgs, 支公司: item.comname, 客户群: item.khq,
     '已核赔款(元)': item.sumpaidYh, '未核赔款(元)': item.sumpaidWh, '赔款合计(元)': item.sumpaidHj,
     '已赚保费(元)': item.yzbf19, 赔付率: item.sgndPfl, '赔付率同比': item.pflTb,
     已决案件量: item.yjAjl, 未决案件: item.wjAjl, 已报案件量: item.ajl,
@@ -279,42 +251,37 @@
     '报告案均同比': item.bgajTb, 单均已赚: item.djyz, '单均已赚同比': item.djyzTb,
     '车损已决(元)': item.yjCs, '人伤已决(元)': item.yjRs, '物损已决(元)': item.yjWs,
     车损已决案件量: item.csAjl, 人伤已决案件量: item.rsAjl, 物损已决案件量: item.wsAjl,
-    '车损已决案均(元)': item.csYjaj, '人伤已决案均(元)': item.rsYjaj, '物损已决案均(元)': item.wsYjaj,
-    '去年已核赔款': item.sumpaidYhQn, '去年赔付率': item.sgndPflQn, '去年出险率': item.clvQn
+    '车损已决案均(元)': item.csYjaj, '人伤已决案均(元)': item.rsYjaj, '物损已决案均(元)': item.wsYjaj
   })
 
   const dateSuffix = () => new Date().toLocaleDateString().replace(/\//g, '-')
 
   const handleExportCurrent = () => {
-    const data = tableData.value as PflsgnXnyData[]
+    const data = tableData.value as PflsgnKhqZgsData[]
     if (!data.length) { ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' }); return }
     const exportData = data.map(exportColumns)
     const ws = XLSX.utils.json_to_sheet(exportData)
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, '事故年赔付率-新能源')
-    XLSX.writeFile(wb, `事故年赔付率-新能源_${dateSuffix()}.xlsx`)
+    XLSX.utils.book_append_sheet(wb, ws, '事故年赔付率-支公司-客户群')
+    XLSX.writeFile(wb, `事故年赔付率-支公司-客户群_${dateSuffix()}.xlsx`)
     ElNotification({ title: '成功', message: '导出成功', type: 'success' })
   }
 
   const handleExportAll = async () => {
     try {
-      const res = await accidentYearLossRate.axiosRequestPflsgnXny(tableApiParams.value)
-      const data = (Array.isArray(res) ? res : []) as PflsgnXnyData[]
+      const res = await accidentYearLossRate.axiosRequestPflsgnKhqZgs(tableApiParams.value)
+      const data = (Array.isArray(res) ? res : []) as PflsgnKhqZgsData[]
       if (!data.length) { ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' }); return }
       const exportData = data.map(exportColumns)
       const ws = XLSX.utils.json_to_sheet(exportData)
       const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, '事故年赔付率-新能源')
-      XLSX.writeFile(wb, `事故年赔付率-新能源_全部_${dateSuffix()}.xlsx`)
+      XLSX.utils.book_append_sheet(wb, ws, '事故年赔付率-支公司-客户群')
+      XLSX.writeFile(wb, `事故年赔付率-支公司-客户群_全部_${dateSuffix()}.xlsx`)
       ElNotification({ title: '成功', message: `${data.length} 条数据导出成功`, type: 'success' })
     } catch { ElNotification({ title: '错误', message: '导出失败', type: 'error' }) }
   }
 </script>
 
 <style scoped>
-  /* 搜索栏表单项：文字标签与选择框在所属列中垂直居中 */
   :deep(.art-search-bar .el-form-item) { align-items: center; margin-bottom: 0; }
-  .custom-header:hover { color: var(--el-color-primary-light-3); padding: 12px 12px 12px; }
-  .demo-group .config-toggles .el-switch { --el-switch-on-color: var(--el-color-primary); }
-  .demo-group .performance-info .el-alert { --el-alert-padding: 12px; }
 </style>

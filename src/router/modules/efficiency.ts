@@ -30,11 +30,11 @@ export const efficiencyRoutes: AppRouteRecord[] = [
         },
         children: [
           {
-            path: 'placeholder',
-            name: 'AnliangPeikuanPlaceholder',
-            component: '/efficiency/operations/pages/anliang_peikuan_placeholder',
+            path: 'ba_la_ja_wj_pk',
+            name: 'BaLaJaWjPk',
+            component: '/efficiency/operations/pages/ba_la_ja_wj_pk',
             meta: {
-              title: 'menus.operations.byQuantity.placeholder.title',
+              title: '车险案件量-承保地',
               keepAlive: false,
               roles: ['R_ADMIN', 'R_SUPER']
             }
@@ -66,6 +66,16 @@ export const efficiencyRoutes: AppRouteRecord[] = [
             component: '/efficiency/operations/pages/zhouqi_bm',
             meta: {
               title: '周期-部门',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'zhouqi_ry',
+            name: 'ZhouqiRy',
+            component: '/efficiency/operations/pages/zhouqi_ry',
+            meta: {
+              title: '周期-人员',
               keepAlive: false,
               roles: ['R_ADMIN', 'R_SUPER']
             }
@@ -109,6 +119,46 @@ export const efficiencyRoutes: AppRouteRecord[] = [
               title: '车险结案率(人员)',
               keepAlive: false,
               roles: ['R_USER', 'R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pacll_bm_shishi',
+            name: 'PacllBmShishi',
+            component: '/efficiency/operations/pages/pacll_bm_shishi',
+            meta: {
+              title: '赔案处理率-部门实时',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'jieanl_bm',
+            name: 'JieanlBm',
+            component: '/efficiency/operations/pages/jieanl_bm',
+            meta: {
+              title: '每日结案量-部门实时',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'jieanl_ry',
+            name: 'JieanlRy',
+            component: '/efficiency/operations/pages/jieanl_ry',
+            meta: {
+              title: '每日结案量-人员实时',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pacll_cx_zgs',
+            name: 'PacllCxZgs',
+            component: '/efficiency/operations/pages/pacll_cx_zgs',
+            meta: {
+              title: '车险结案率-支公司',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
             }
           }
         ]
@@ -162,6 +212,16 @@ export const efficiencyRoutes: AppRouteRecord[] = [
               roles: ['R_USER', 'R_ADMIN', 'R_SUPER']
             }
           },
+          {
+            path: 'lingjie_ry',
+            name: 'LingjieRy',
+            component: '/efficiency/operations/pages/lingjie_ry',
+            meta: {
+              title: '零结案-人员',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          }
         ]
       }
     ]
@@ -192,6 +252,16 @@ export const efficiencyRoutes: AppRouteRecord[] = [
             component: '/efficiency/costcontrol/pages/zhpfl_khq',
             meta: {
               title: '综合赔付率-客户群',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'zhpfl_xz',
+            name: 'ZhpflXz',
+            component: '/efficiency/costcontrol/pages/zhpfl_xz',
+            meta: {
+              title: '综合赔付率-险种',
               keepAlive: false,
               roles: ['R_ADMIN', 'R_SUPER']
             }
@@ -233,6 +303,46 @@ export const efficiencyRoutes: AppRouteRecord[] = [
             component: '/efficiency/costcontrol/pages/pflsgn_xny',
             meta: {
               title: '事故年-新能源',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pflsgn_syxz',
+            name: 'PflsgnSyxz',
+            component: '/efficiency/costcontrol/pages/pflsgn_syxz',
+            meta: {
+              title: '事故年-使用性质',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pflsgn_khq_zgs',
+            name: 'PflsgnKhqZgs',
+            component: '/efficiency/costcontrol/pages/pflsgn_khq_zgs',
+            meta: {
+              title: '事故年-支公司-客户群',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pflsgn_syxz_zgs',
+            name: 'PflsgnSyxzZgs',
+            component: '/efficiency/costcontrol/pages/pflsgn_syxz_zgs',
+            meta: {
+              title: '事故年-支公司-使用性质',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pflsgn_pp_zgs',
+            name: 'PflsgnPpZgs',
+            component: '/efficiency/costcontrol/pages/pflsgn_pp_zgs',
+            meta: {
+              title: '事故年-支公司-品牌',
               keepAlive: false,
               roles: ['R_ADMIN', 'R_SUPER']
             }
@@ -280,7 +390,7 @@ export const efficiencyRoutes: AppRouteRecord[] = [
           }
         ]
       },
-      // ==================== 保单年赔付率 ====================
+      // ==================== 保单年赔付率 (2026-06 新增 9 张表) ====================
       {
         path: 'baodannian_pfl',
         name: 'BaodannianPfl',
@@ -290,11 +400,91 @@ export const efficiencyRoutes: AppRouteRecord[] = [
         },
         children: [
           {
-            path: 'placeholder',
-            name: 'BaodannianPflPlaceholder',
-            component: '/efficiency/costcontrol/pages/baodannian_pfl_placeholder',
+            path: 'pflbdn_zgs',
+            name: 'PflbdnZgs',
+            component: '/efficiency/costcontrol/pages/pflbdn_zgs',
             meta: {
-              title: 'menus.costControl.policyYear.placeholder.title',
+              title: '保单年-支公司',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pflbdn_khq',
+            name: 'PflbdnKhq',
+            component: '/efficiency/costcontrol/pages/pflbdn_khq',
+            meta: {
+              title: '保单年-客户群',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pflbdn_syxz',
+            name: 'PflbdnSyxz',
+            component: '/efficiency/costcontrol/pages/pflbdn_syxz',
+            meta: {
+              title: '保单年-使用性质',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pflbdn_pinpai',
+            name: 'PflbdnPinpai',
+            component: '/efficiency/costcontrol/pages/pflbdn_pinpai',
+            meta: {
+              title: '保单年-品牌',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pflbdn_xny',
+            name: 'PflbdnXny',
+            component: '/efficiency/costcontrol/pages/pflbdn_xny',
+            meta: {
+              title: '保单年-新能源',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pflbdn_syxz_zgs',
+            name: 'PflbdnSyxzZgs',
+            component: '/efficiency/costcontrol/pages/pflbdn_syxz_zgs',
+            meta: {
+              title: '保单年-支公司-使用性质',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pflbdn_khq_zgs',
+            name: 'PflbdnKhqZgs',
+            component: '/efficiency/costcontrol/pages/pflbdn_khq_zgs',
+            meta: {
+              title: '保单年-支公司-客户群',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pflbdn_xny_zgs',
+            name: 'PflbdnXnyZgs',
+            component: '/efficiency/costcontrol/pages/pflbdn_xny_zgs',
+            meta: {
+              title: '保单年-支公司-新能源',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'pflbdn_pp_zgs',
+            name: 'PflbdnPpZgs',
+            component: '/efficiency/costcontrol/pages/pflbdn_pp_zgs',
+            meta: {
+              title: '保单年-支公司-品牌',
               keepAlive: false,
               roles: ['R_ADMIN', 'R_SUPER']
             }
@@ -332,11 +522,21 @@ export const efficiencyRoutes: AppRouteRecord[] = [
         },
         children: [
           {
-            path: 'placeholder',
-            name: 'WeixiuDanweiPlaceholder',
-            component: '/efficiency/costcontrol/pages/weixiu_danwei_placeholder',
+            path: 'zgs_cbb',
+            name: 'WeixiuZgsCbb',
+            component: '/efficiency/costcontrol/pages/weixiu_zgs_cbb',
             meta: {
-              title: 'menus.costControl.repairShop.placeholder.title',
+              title: '各支公司产保比',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'gjzb',
+            name: 'WeixiuGjzb',
+            component: '/efficiency/costcontrol/pages/weixiu_gjzb',
+            meta: {
+              title: '维修单位关键指标',
               keepAlive: false,
               roles: ['R_ADMIN', 'R_SUPER']
             }

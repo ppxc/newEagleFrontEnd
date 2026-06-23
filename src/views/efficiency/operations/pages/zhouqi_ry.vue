@@ -5,9 +5,9 @@
       v-model="searchFormState"
       :items="searchItems"
       :rules="rules"
-     
-     
-      :show-expand="false" :show-reset-button="true"
+      :is-expand="false"
+      :show-expand="true"
+      :show-reset-button="true"
       :show-search-button="true"
       :disabled-search-button="false"
       @search="handleSearch"
@@ -17,7 +17,7 @@
     <ElCard class="flex-1 art-table-card" style="margin-top: 0;padding: 5px;">
       <template #header>
         <div class="flex-cb">
-          <h4 class="m-0">综合赔付率-客户群【统计时间：{{ currentMaxTjTime }}】</h4>
+          <h4 class="m-0">周期-人员【统计时间：{{ currentMaxTjTime }}】</h4>
           <div class="flex gap-1">
             <ElTag v-if="tableError" type="danger">{{ tableError.message }}</ElTag>
             <ElTag v-else-if="loading" type="warning">加载中...</ElTag>
@@ -75,79 +75,62 @@
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
 
-  defineOptions({ name: 'ZhpflKhqTable' })
+  defineOptions({ name: 'ZhouqiRyTable' })
 
-  // ==================== 1. 类型定义 ====================
-  interface ZhpflKhqData {
-    id: number | null | undefined
+  interface ZhouqiRyData {
     tjDate: string | null
-    comcodeSgs: string
-    comnameSgs: string
-    khq: string
-    riskcode: string
-    zhcbl: string
-    zhfyl: string
-    zhpfl: string
-    zhcblQn: string
-    zhfylQn: string
-    zhpflQn: string
-    zhcblTb: string
-    zhpflTb: string
+    comnameSgs: string | null
+    comnameCk: string | null
+    groups: string | null
+    username: string | null
+    usercode: string | null
+    zhouqiZt: number | null; zhouqiWyn: number | null; zhouqiWys: number | null
+    chakanZt: number | null; cuidingZt: number | null; dingsunZt: number | null; zhifuZt: number | null
     maxTjTime: string | null
   }
-
   interface SelectOption { label: string; value: string }
   interface UseTableParams { current: number; size: number; [key: string]: any }
   interface UseTableResult<T> { records: T[]; total: number; current: number; size: number }
 
-  // ==================== 2. 常量 ====================
   const tableHeight = 'calc(100vh - 330px)'
   const DEFAULT_PAGINATION = { current: 1, size: 20 }
   const DEFAULT_FORM = { tjDate: '', comnameSgs: '' }
 
-  // ==================== 3. 状态 ====================
   const searchBarRef = ref<any>(null)
   const currentMaxTjTime = ref<string>('')
   let isInitialized = false
-  const comOptions = ref<SelectOption[]>([])
+  const comnameSgsOptions = ref<SelectOption[]>([])
 
-  // ==================== 4. 搜索表单 ====================
   const rules = { tjDate: [{ required: false, message: '请选择统计时间', trigger: 'change' }] }
   const searchFormState = ref({ ...DEFAULT_FORM })
   const tableApiParams = ref({ ...DEFAULT_PAGINATION, ...searchFormState.value })
 
   const searchItems = computed(() => [
     { key: 'tjDate', label: '统计时间', type: 'date', props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' } },
-    { key: 'comnameSgs', label: '市公司', type: 'select', props: { placeholder: '请选择市公司', options: comOptions.value, clearable: true } }
+    { key: 'comnameSgs', label: '市公司', type: 'select', props: { placeholder: '请选择市公司', options: comnameSgsOptions.value, clearable: true } }
   ])
 
-  // ==================== 5. 构建下拉 ====================
-  const buildDeptOptions = (data: ZhpflKhqData[]) => {
-    if (comOptions.value.length) return
-    const comSet = new Set<string>()
-    data.forEach((item) => { if (item.comnameSgs) comSet.add(item.comnameSgs) })
-    comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-    ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司`, type: 'success' })
+  const buildSgsOptions = (data: ZhouqiRyData[]) => {
+    if (comnameSgsOptions.value.length) return
+    const set = new Set<string>()
+    data.forEach((item) => { if (item.comnameSgs) set.add(item.comnameSgs) })
+    comnameSgsOptions.value = Array.from(set).sort().map((v) => ({ label: v, value: v }))
+    ElNotification({ title: '提示', message: `已加载：${comnameSgsOptions.value.length} 个市公司`, type: 'success' })
   }
 
-  // ==================== 6. 表格 Hook ====================
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, columns, columnChecks } = useTable({
     core: {
-      apiFn: async (params: UseTableParams): Promise<UseTableResult<ZhpflKhqData>> => {
+      apiFn: async (params: UseTableParams): Promise<UseTableResult<ZhouqiRyData>> => {
         const queryParams = {
           current: params.current, size: params.size,
           tjDate: tableApiParams.value.tjDate || '',
           comnameSgs: tableApiParams.value.comnameSgs ?? ''
         }
-        // 后端 /page 端点直接返回 { records, total, current, size }
-        const response = await dataReport.axiosRequestZhpflKhqPage(queryParams)
-        const page = (response ?? {}) as UseTableResult<ZhpflKhqData>
+        const response = await dataReport.axiosRequestZhouqiRyPage(queryParams)
+        const page = (response ?? {}) as UseTableResult<ZhouqiRyData>
         const records = page.records || []
         if (records.length) {
-          if (!isInitialized) {
-            buildDeptOptions(records)
-            isInitialized = true
-          }
+          if (!isInitialized) { buildSgsOptions(records); isInitialized = true }
           currentMaxTjTime.value = records[0].maxTjTime || ''
           if (!searchFormState.value.tjDate && records[0].maxTjTime) {
             searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10)
@@ -158,37 +141,30 @@
       apiParams: tableApiParams.value,
       immediate: true,
       columnsFactory: () => [
-        { prop: 'comcodeSgs', label: '公司代码', width: 130, align: 'center', sortable: true },
-        { prop: 'comnameSgs', label: '市公司', minWidth: 200, align: 'center', fixed: 'left', sortable: true },
-        { prop: 'khq', label: '客户群', width: 100, align: 'center', sortable: true },
-        { prop: 'riskcode', label: '险类', width: 100, align: 'center', sortable: true },
-        { prop: 'zhcbl', label: '综合成本率', width: 120, align: 'center', sortable: true },
-        { prop: 'zhfyl', label: '综合费用率', width: 120, align: 'center', sortable: true },
-        { prop: 'zhpfl', label: '综合赔付率', width: 120, align: 'center', sortable: true },
-        { prop: 'zhcblQn', label: '综合成本率去年', width: 140, align: 'center', sortable: true },
-        { prop: 'zhfylQn', label: '综合费用率去年', width: 140, align: 'center', sortable: true },
-        { prop: 'zhpflQn', label: '综合赔付率去年', width: 140, align: 'center', sortable: true },
-        { prop: 'zhcblTb', label: '综合成本率同比', width: 140, align: 'center', sortable: true },
-        { prop: 'zhpflTb', label: '综合赔付率同比', width: 140, align: 'center', sortable: true }
+        { prop: 'comnameCk', label: '部门', minWidth: 180, align: 'center', fixed: 'left', sortable: true },
+        { prop: 'groups', label: '小组', minWidth: 160, align: 'center', fixed: 'left', sortable: true },
+        { prop: 'username', label: '人员', minWidth: 100, align: 'center', fixed: 'left' },
+        { prop: 'usercode', label: '工号', width: 100, align: 'center' },
+        { prop: 'zhouqiZt', label: '整体结案周期（天）', width: 140, align: 'center', sortable: true },
+        { prop: 'zhouqiWyn', label: '万元内案件周期', width: 140, align: 'center', sortable: true },
+        { prop: 'zhouqiWys', label: '万元以上案件周期', width: 150, align: 'center', sortable: true },
+        { prop: 'chakanZt', label: '查勘周期', width: 110, align: 'center', sortable: true },
+        { prop: 'cuidingZt', label: '催定周期', width: 110, align: 'center', sortable: true },
+        { prop: 'dingsunZt', label: '定损周期', width: 110, align: 'center', sortable: true },
+        { prop: 'zhifuZt', label: '定损完成-支付', width: 130, align: 'center', sortable: true }
       ]
     },
     performance: { enableCache: true, cacheTime: 5 * 60 * 1000, debounceTime: 300, maxCacheSize: 100 }
   })
 
-  // ==================== 7. 操作 ====================
-  const localHandleCurrentChange = (newCurrent: number) => {
-    fetchData({ current: newCurrent })
-  }
-
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
-  }
+  const localHandleCurrentChange = (newCurrent: number) => fetchData({ current: newCurrent })
+  const localHandleSizeChange = (newSize: number) => fetchData({ size: newSize, current: 1 })
 
   const handleRefresh = async () => {
     try {
-      const res = await dataReport.axiosRequestZhpflKhq({ current: 1, size: 9999 })
+      const res = await dataReport.axiosRequestZhouqiRy({ current: 1, size: 9999 })
       if (Array.isArray(res) && res.length) {
-        buildDeptOptions(res)
+        buildSgsOptions(res)
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
       await fetchData()
@@ -196,11 +172,9 @@
   }
 
   const handleSearch = async () => {
-    try {
-      await searchBarRef.value?.validate()
-      tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }
-      refreshData()
-    } catch { /* validation failed */ }
+    try { await searchBarRef.value?.validate() } catch { return }
+    tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }
+    refreshData()
   }
 
   const handleReset = () => {
@@ -209,47 +183,45 @@
     refreshData()
   }
 
-  // ==================== 8. 导出 ====================
-  const exportColumns = (item: ZhpflKhqData, index: number) => ({
-    序号: index + 1, 公司代码: item.comcodeSgs, 市公司: item.comnameSgs,
-    客户群: item.khq, 险类: item.riskcode,
-    综合成本率: item.zhcbl, 综合费用率: item.zhfyl, 综合赔付率: item.zhpfl,
-    '综合成本率去年': item.zhcblQn, '综合费用率去年': item.zhfylQn, '综合赔付率去年': item.zhpflQn,
-    '综合成本率同比': item.zhcblTb, '综合赔付率同比': item.zhpflTb
+  const exportColumns = (item: ZhouqiRyData, index: number) => ({
+    序号: index + 1,
+    部门: item.comnameCk, 小组: item.groups, 人员: item.username, 工号: item.usercode,
+    整体结案周期: item.zhouqiZt,
+    万元内案件周期: item.zhouqiWyn,
+    万元以上案件周期: item.zhouqiWys,
+    查勘周期: item.chakanZt,
+    催定周期: item.cuidingZt,
+    定损周期: item.dingsunZt,
+    定损完成支付: item.zhifuZt
   })
 
   const dateSuffix = () => new Date().toLocaleDateString().replace(/\//g, '-')
+  const SHEET = '周期-人员'
 
   const handleExportCurrent = () => {
-    const data = tableData.value as ZhpflKhqData[]
+    const data = tableData.value as ZhouqiRyData[]
     if (!data.length) { ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' }); return }
-    const exportData = data.map(exportColumns)
-    const ws = XLSX.utils.json_to_sheet(exportData)
+    const ws = XLSX.utils.json_to_sheet(data.map(exportColumns))
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, '综合赔付率-客户群')
-    XLSX.writeFile(wb, `综合赔付率-客户群_${dateSuffix()}.xlsx`)
+    XLSX.utils.book_append_sheet(wb, ws, SHEET)
+    XLSX.writeFile(wb, `${SHEET}_${dateSuffix()}.xlsx`)
     ElNotification({ title: '成功', message: '导出成功', type: 'success' })
   }
 
   const handleExportAll = async () => {
     try {
-      const res = await dataReport.axiosRequestZhpflKhq(tableApiParams.value)
-      const data = (Array.isArray(res) ? res : []) as ZhpflKhqData[]
+      const res = await dataReport.axiosRequestZhouqiRy(tableApiParams.value)
+      const data = (Array.isArray(res) ? res : []) as ZhouqiRyData[]
       if (!data.length) { ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' }); return }
-      const exportData = data.map(exportColumns)
-      const ws = XLSX.utils.json_to_sheet(exportData)
+      const ws = XLSX.utils.json_to_sheet(data.map(exportColumns))
       const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, '综合赔付率-客户群')
-      XLSX.writeFile(wb, `综合赔付率-客户群_全部_${dateSuffix()}.xlsx`)
+      XLSX.utils.book_append_sheet(wb, ws, SHEET)
+      XLSX.writeFile(wb, `${SHEET}_全部_${dateSuffix()}.xlsx`)
       ElNotification({ title: '成功', message: `${data.length} 条数据导出成功`, type: 'success' })
     } catch { ElNotification({ title: '错误', message: '导出失败', type: 'error' }) }
   }
 </script>
 
 <style scoped>
-  /* 搜索栏表单项：文字标签与选择框在所属列中垂直居中 */
   :deep(.art-search-bar .el-form-item) { align-items: center; margin-bottom: 0; }
-  .custom-header:hover { color: var(--el-color-primary-light-3); padding: 12px 12px 12px; }
-  .demo-group .config-toggles .el-switch { --el-switch-on-color: var(--el-color-primary); }
-  .demo-group .performance-info .el-alert { --el-alert-padding: 12px; }
 </style>

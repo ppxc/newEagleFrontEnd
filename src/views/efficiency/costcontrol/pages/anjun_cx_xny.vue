@@ -3,9 +3,9 @@
     <ArtSearchBar
       v-model="searchFormState"
       :items="searchItems"
-      :is-expand="false"
-      :show-expand="true"
-      :show-reset-button="true"
+     
+     
+      :show-expand="false" :show-reset-button="true"
       :show-search-button="true"
       :disabled-search-button="false"
       @search="handleSearch"

@@ -258,10 +258,7 @@
       "operations": {
         "title": "Operations Efficiency",
         "byQuantity": {
-          "title": "By-Quantity Compensation",
-          "placeholder": {
-            "title": "By-Quantity Compensation - Placeholder"
-          }
+          "title": "By-Quantity Compensation"
         },
         "claimCycle": {
           "title": "Claim Cycle"

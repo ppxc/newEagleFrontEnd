@@ -5,9 +5,9 @@
       v-model="searchFormState"
       :items="searchItems"
       :rules="rules"
-      :is-expand="false"
-      :show-expand="true"
-      :show-reset-button="true"
+     
+     
+      :show-expand="false" :show-reset-button="true"
       :show-search-button="true"
       :disabled-search-button="false"
       @search="handleSearch"
@@ -160,8 +160,8 @@
   const tableApiParams = ref({ ...DEFAULT_PAGINATION, ...searchFormState.value })
 
   const searchItems = computed(() => [
-    { key: 'tjDate', label: '统计时间', type: 'date', props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' } },
-    { key: 'comnameSgs', label: '市公司', type: 'select', props: { placeholder: '请选择市公司', options: comOptions.value, clearable: true } }
+    { key: 'tjDate', label: '统计时间', type: 'date', span: 5, props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' } },
+    { key: 'comnameSgs', label: '市公司', type: 'select', span: 5, props: { placeholder: '请选择市公司', options: comOptions.value, clearable: true } }
   ])
 
   // ==================== 5. 构建下拉 ====================
