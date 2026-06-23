@@ -272,10 +272,7 @@
     "operations": {
       "title": "运营效率",
       "byQuantity": {
-        "title": "按量赔款",
-        "placeholder": {
-          "title": "按量赔款-占位"
-        }
+        "title": "按量赔款"
       },
       "claimCycle": {
         "title": "理赔周期"
@@ -308,10 +305,7 @@
         }
       },
       "repairShop": {
-        "title": "维修单位",
-        "placeholder": {
-          "title": "维修单位-占位"
-        }
+        "title": "维修单位"
       },
       "anjun": {
         "title": "案均赔款"
