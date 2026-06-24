@@ -56,7 +56,7 @@
         :height="tableHeight"
         :scrollbar-always-on="true"
         empty-height="660px"
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <template #index="{ $index }">
@@ -71,7 +71,7 @@
   import { ref, computed } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
 
@@ -110,6 +110,24 @@
     { key: 'comnameSgs', label: '市公司', type: 'select', props: { placeholder: '请选择市公司', options: comnameSgsOptions.value, clearable: true } }
   ])
 
+
+  // ==================== 5. 构建下拉 (全量版) ====================
+  // 用独立的全量端点（/list, size: 9999）构建市公司下拉，避免首屏分页只有 20 行时遗漏
+  // 后续页中才出现的市公司。返回的集合是全量的，与分页结果无关。
+  const fetchAllForDropdown = async (tjDate: string) => {
+    if (comnameSgsOptions.value.length) return
+    try {
+      const res = await dataReport.axiosRequestZhouqiRy({ current: 1, size: 9999, tjDate, tjDate: tableApiParams.value.tjDate || '', comnameSgs: tableApiParams.value.comnameSgs ?? '' })
+      if (Array.isArray(res) && res.length) {
+        const set = new Set<string>()
+        res.forEach((item) => { if (item.comnameSgs) set.add(item.comnameSgs) })
+        comnameSgsOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
+        ElNotification({ title: '提示', message: `已加载：${comnameSgsOptions.value.length} 个市公司`, type: 'success' })
+      }
+    } catch {
+      /* ignore */
+    }
+  }
   const buildSgsOptions = (data: ZhouqiRyData[]) => {
     if (comnameSgsOptions.value.length) return
     const set = new Set<string>()
@@ -118,7 +136,7 @@
     ElNotification({ title: '提示', message: `已加载：${comnameSgsOptions.value.length} 个市公司`, type: 'success' })
   }
 
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, columns, columnChecks } = useTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<ZhouqiRyData>> => {
         const queryParams = {
@@ -130,7 +148,7 @@
         const page = (response ?? {}) as UseTableResult<ZhouqiRyData>
         const records = page.records || []
         if (records.length) {
-          if (!isInitialized) { buildSgsOptions(records); isInitialized = true }
+          if (!isInitialized) { fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || ''); isInitialized = true }
           currentMaxTjTime.value = records[0].maxTjTime || ''
           if (!searchFormState.value.tjDate && records[0].maxTjTime) {
             searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10)

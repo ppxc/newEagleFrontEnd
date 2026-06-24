@@ -72,7 +72,7 @@
         @row-click="handleRowClick"
         @header-click="handleHeaderClick"
         @sort-change="handleSortChange"
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <!-- 序号列：自动计算分页序号 -->
@@ -131,7 +131,7 @@
   import { ref, computed, onMounted, nextTick } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import * as XLSX from 'xlsx'
   import { dailyWorkload } from '../../api'
   const VITE_API_PROXY_PORT_URL = import.meta.env.VITE_API_PROXY_PORT_URL
@@ -261,7 +261,7 @@
     handleSizeChange,
     columns,
     columnChecks
-  } = useTable({
+  } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<DailyWorkloadBmData>> => {
         const queryParams = {
@@ -349,10 +349,6 @@
   // ==================== 9. 页面操作方法 ====================
   const localHandleCurrentChange = (newCurrent: number) => {
     fetchData({ current: newCurrent })
-  }
-
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
   }
 
   const handleRefresh = async () => {

@@ -56,7 +56,7 @@
         :height="tableHeight"
         :scrollbar-always-on="true"
         empty-height="660px"
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <template #index="{ $index }">
@@ -71,7 +71,7 @@
   import { ref, computed } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
 
@@ -114,6 +114,24 @@
     { key: 'comname', label: '部门', type: 'select', props: { placeholder: '请选择部门', options: comnameOptions.value, clearable: true } }
   ])
 
+
+  // ==================== 5. 构建下拉 (全量版) ====================
+  // 用独立的全量端点（/list, size: 9999）构建部门下拉，避免首屏分页只有 20 行时遗漏
+  // 后续页中才出现的部门。返回的集合是全量的，与分页结果无关。
+  const fetchAllForDropdown = async (tjDate: string) => {
+    if (comnameOptions.value.length) return
+    try {
+      const res = await dataReport.axiosRequestJieanlRy({ current: 1, size: 9999, tjDate, tjDate: tableApiParams.value.tjDate || '', comname: tableApiParams.value.comname ?? '' })
+      if (Array.isArray(res) && res.length) {
+        const set = new Set<string>()
+        res.forEach((item) => { if (item.comname) set.add(item.comname) })
+        comnameOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
+        ElNotification({ title: '提示', message: `已加载：${comnameOptions.value.length} 个部门`, type: 'success' })
+      }
+    } catch {
+      /* ignore */
+    }
+  }
   const buildDeptOptions = (data: JieanlRyData[]) => {
     if (comnameOptions.value.length) return
     const set = new Set<string>()
@@ -122,7 +140,7 @@
     ElNotification({ title: '提示', message: `已加载：${comnameOptions.value.length} 个部门`, type: 'success' })
   }
 
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, columns, columnChecks } = useTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<JieanlRyData>> => {
         const queryParams = {
@@ -134,7 +152,7 @@
         const page = (response ?? {}) as UseTableResult<JieanlRyData>
         const records = page.records || []
         if (records.length) {
-          if (!isInitialized) { buildDeptOptions(records); isInitialized = true }
+          if (!isInitialized) { fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || ''); isInitialized = true }
           currentMaxTjTime.value = records[0].maxTjTime || ''
           if (!searchFormState.value.tjDate && records[0].maxTjTime) {
             searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10)

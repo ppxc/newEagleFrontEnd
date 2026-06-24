@@ -57,7 +57,7 @@
         :scrollbar-always-on="true"
         empty-height="660px"
         merge-first-column
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <template #index="{ $index }">
@@ -72,7 +72,7 @@
   import { ref, computed, watch } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
 
@@ -134,13 +134,46 @@
     { key: 'username', label: '人员', type: 'input', props: { placeholder: '请输入人员名称' } }
   ])
 
-  // ==================== 6. 构建下拉 ====================
+  // ==================== 6. 构建下拉 (全量版) ====================
   const sortGroupByCode = (groups: GroupOption[]) => {
     return groups.sort((a, b) => {
       const codeA = typeof a.groupsCode === 'string' ? parseInt(a.groupsCode) || 0 : a.groupsCode
       const codeB = typeof b.groupsCode === 'string' ? parseInt(b.groupsCode) || 0 : b.groupsCode
       return codeA - codeB
     })
+  }
+
+  // 用独立的全量端点（/list, size: 9999）构建部门+小组级联下拉，
+  // 避免首屏分页只有 20 行时遗漏后续页中的部门/小组组合。
+  const fetchAllForDropdown = async (tjDate: string) => {
+    if (Object.keys(deptGroupMap.value).length) return
+    try {
+      const res = await dataReport.axiosRequestPacllRy({ current: 1, size: 9999, tjDate, comname: '' })
+      if (Array.isArray(res) && res.length) {
+        const comSet = new Set<string>()
+        const tempDeptGroupMap: DeptGroupMap = {}
+        const seenGroups = new Set<string>()
+        let groupCount = 0
+        res.forEach((item: PacllRyData) => {
+          if (!item.bm) return
+          comSet.add(item.bm)
+          if (item.groups) {
+            if (!tempDeptGroupMap[item.bm]) tempDeptGroupMap[item.bm] = []
+            const exists = tempDeptGroupMap[item.bm].some((g) => g.value === item.groups)
+            if (!exists) {
+              tempDeptGroupMap[item.bm].push({ label: item.groups, value: item.groups, groupsCode: item.usercode || '' })
+              if (!seenGroups.has(item.groups)) { seenGroups.add(item.groups); groupCount++ }
+            }
+          }
+        })
+        comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
+        Object.keys(tempDeptGroupMap).forEach((dept) => { tempDeptGroupMap[dept] = sortGroupByCode(tempDeptGroupMap[dept]) })
+        deptGroupMap.value = tempDeptGroupMap
+        ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个部门，共 ${groupCount} 个小组`, type: 'success' })
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   const buildDeptGroupMap = (data: PacllRyData[]) => {
@@ -179,7 +212,7 @@
   }, { immediate: true })
 
   // ==================== 8. 表格 Hook ====================
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<PacllRyData>> => {
         const queryParams = {
@@ -195,7 +228,7 @@
         const records = page.records || []
         if (records.length) {
           if (!isInitialized) {
-            buildDeptGroupMap(records)
+            fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || '')
             isInitialized = true
           }
           currentMaxTjTime.value = records[0].maxTjTime || ''
@@ -228,16 +261,17 @@
     fetchData({ current: newCurrent })
   }
 
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
-  }
-
   const handleRefresh = async () => {
+    // 重置级联 map，强制重新拉全量
+    deptGroupMap.value = {}
+    comOptions.value = []
+    isInitialized = false
     try {
-      const res = await dataReport.axiosRequestPacllRy({ current: 1, size: 9999 })
+      const res = await dataReport.axiosRequestPacllRy({ current: 1, size: 9999, tjDate: tableApiParams.value.tjDate, comname: '' })
       if (Array.isArray(res) && res.length) {
-        buildDeptGroupMap(res)
         currentMaxTjTime.value = res[0].maxTjTime || ''
+        await fetchAllForDropdown(tableApiParams.value.tjDate || res[0].maxTjTime?.substring(0, 10) || '')
+        isInitialized = true
       }
       await fetchData()
     } catch { await fetchData() }

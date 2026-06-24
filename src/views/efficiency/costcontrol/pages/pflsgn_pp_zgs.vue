@@ -57,7 +57,7 @@
         :scrollbar-always-on="true"
         empty-height="660px"
         merge-first-column
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <template #index="{ $index }">
@@ -72,7 +72,7 @@
   import { ref, computed } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import * as XLSX from 'xlsx'
   import { accidentYearLossRate } from '../../api'
 
@@ -120,23 +120,34 @@
     { key: 'brandname', label: '品牌', type: 'select', span: 5, props: { placeholder: '请选择品牌', options: brandOptions.value, clearable: true } }
   ])
 
-  const buildOptions = (data: PflsgnPpZgsData[]) => {
-    if (comOptions.value.length && brandOptions.value.length) return
-    const comSet = new Set<string>()
-    const zgSet = new Set<string>()
-    const brandSet = new Set<string>()
-    data.forEach((item) => {
-      if (item.comnameSgs) comSet.add(item.comnameSgs)
-      if (item.comname) zgSet.add(item.comname)
-      if (item.brandname) brandSet.add(item.brandname)
-    })
-    comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-    zgOptions.value = Array.from(zgSet).map((name) => ({ label: name, value: name }))
-    brandOptions.value = Array.from(brandSet).map((name) => ({ label: name, value: name }))
-    ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司 / ${zgOptions.value.length} 个支公司 / ${brandOptions.value.length} 个品牌`, type: 'success' })
+
+  // ==================== 5. 构建下拉 (全量版) ====================
+  // 用独立的全量端点（/list, size: 9999）构建市公司/支公司/品牌下拉，
+  // 避免首屏分页只有 20 行时遗漏后续页中的支公司/品牌。返回的集合是全量的，与分页结果无关。
+  const fetchAllForDropdown = async (tjDate: string) => {
+    if (comOptions.value.length && zgOptions.value.length && brandOptions.value.length) return
+    try {
+      const res = await accidentYearLossRate.axiosRequestPflsgnPpZgs({ current: 1, size: 9999, tjDate, comnameSgs: tableApiParams.value.comnameSgs ?? '', comname: tableApiParams.value.comname ?? '', brandname: tableApiParams.value.brandname ?? '' })
+      if (Array.isArray(res) && res.length) {
+        const comSet = new Set<string>()
+        const zgSet = new Set<string>()
+        const brandSet = new Set<string>()
+        res.forEach((item: PflsgnPpZgsData) => {
+          if (item.comnameSgs) comSet.add(item.comnameSgs)
+          if (item.comname) zgSet.add(item.comname)
+          if (item.brandname) brandSet.add(item.brandname)
+        })
+        comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
+        zgOptions.value = Array.from(zgSet).map((name) => ({ label: name, value: name }))
+        brandOptions.value = Array.from(brandSet).map((name) => ({ label: name, value: name }))
+        ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司 / ${zgOptions.value.length} 个支公司 / ${brandOptions.value.length} 个品牌`, type: 'success' })
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, columns, columnChecks } = useTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<PflsgnPpZgsData>> => {
         const queryParams = {
@@ -150,7 +161,7 @@
         const page = (response ?? {}) as UseTableResult<PflsgnPpZgsData>
         const records = page.records || []
         if (records.length) {
-          if (!isInitialized) { buildOptions(records); isInitialized = true }
+          if (!isInitialized) { fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || ''); isInitialized = true }
           currentMaxTjTime.value = records[0].maxTjTime || ''
           if (!searchFormState.value.tjDate && records[0].maxTjTime) {
             searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10)
@@ -193,12 +204,11 @@
   })
 
   const localHandleCurrentChange = (newCurrent: number) => { fetchData({ current: newCurrent }) }
-  const localHandleSizeChange = (newSize: number) => { fetchData({ size: newSize, current: 1 }) }
 
   const handleRefresh = async () => {
     try {
-      const res = await accidentYearLossRate.axiosRequestPflsgnPpZgs({ current: 1, size: 9999 })
-      if (Array.isArray(res) && res.length) { buildOptions(res); currentMaxTjTime.value = res[0].maxTjTime || '' }
+      await fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || '')
+      isInitialized = true
       await fetchData()
     } catch { await fetchData() }
   }

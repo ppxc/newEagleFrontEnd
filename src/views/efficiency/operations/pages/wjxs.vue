@@ -68,7 +68,7 @@
         :scrollbar-always-on="true"
         merge-first-column
         empty-height="660px"
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <!-- 序号列 -->
@@ -118,7 +118,7 @@
   import { ref, computed, onMounted, nextTick } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
 
@@ -211,17 +211,24 @@
     tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'
   )
 
-  // ==================== 5. 构建市公司下拉（来自当前加载数据） ====================
-  const buildComnameSgsOptions = (data: WjxsData[]) => {
-    if (isInitialized.value) return
-    const set = new Set<string>()
-    data.forEach((row) => {
-      if (row.comname) set.add(row.comname)
-    })
-    comnameSgsOptions.value = Array.from(set)
-      .sort()
-      .map((v) => ({ label: v, value: v }))
-    isInitialized.value = true
+  // ==================== 5. 构建市公司下拉（全量版） ====================
+  // 用独立的全量端点（/list, size: 9999）构建市公司下拉，避免首屏分页只有 20 行时遗漏
+  // 后续页中才出现的市公司。返回的集合是全量的，与分页结果无关。
+  const fetchAllForDropdown = async (tjDate: string) => {
+    if (comnameSgsOptions.value.length) return
+    try {
+      const res = await dataReport.axiosRequestWjxs({ current: 1, size: 9999, tjDate, comnameSgs: '' })
+      if (Array.isArray(res) && res.length) {
+        const set = new Set<string>()
+        res.forEach((item: WjxsData) => { if (item.comname) set.add(item.comname) })
+        comnameSgsOptions.value = Array.from(set)
+          .sort()
+          .map((v) => ({ label: v, value: v }))
+        ElNotification({ title: '提示', message: `已加载：${comnameSgsOptions.value.length} 个市公司`, type: 'success' })
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   // ==================== 6. 表格核心 Hook ====================
@@ -235,7 +242,7 @@
     handleSizeChange,
     columns,
     columnChecks
-  } = useTable({
+  } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<WjxsData>> => {
         const queryParams = {
@@ -250,7 +257,10 @@
         const records = page.records || []
 
         if (records.length) {
-          buildComnameSgsOptions(records)
+          if (!isInitialized.value) {
+            fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || '')
+            isInitialized.value = true
+          }
           currentMaxTjTime.value = records[0].maxTjTime || ''
           // 无日期条件时默认回填最新数据日期
           if (!searchFormState.value.tjDate && records[0].maxTjTime) {
@@ -341,20 +351,22 @@
   const localHandleCurrentChange = (newCurrent: number) => {
     fetchData({ current: newCurrent })
   }
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
-  }
 
   // ==================== 8. 页面操作方法 ====================
   const handleRefresh = async () => {
+    // 重置初始化标志和下拉，强制重新拉全量
+    comnameSgsOptions.value = []
+    isInitialized.value = false
     try {
       const res = await dataReport.axiosRequestWjxs({
+        current: 1, size: 9999,
         tjDate: tableApiParams.value.tjDate || '',
-        comnameSgs: tableApiParams.value.comnameSgs ?? ''
+        comnameSgs: ''
       })
       if (Array.isArray(res) && res.length) {
-        buildComnameSgsOptions(res as WjxsData[])
         currentMaxTjTime.value = res[0].maxTjTime || ''
+        await fetchAllForDropdown(tableApiParams.value.tjDate || res[0].maxTjTime?.substring(0, 10) || '')
+        isInitialized.value = true
       }
       await fetchData()
     } catch {

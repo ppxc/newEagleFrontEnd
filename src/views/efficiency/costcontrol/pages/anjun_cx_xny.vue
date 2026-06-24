@@ -55,7 +55,7 @@
         :scrollbar-always-on="true"
         empty-height="660px"
         merge-first-column
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <template #index="{ $index }">
@@ -70,7 +70,7 @@
   import { computed } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import * as XLSX from 'xlsx'
   import { claimAverage } from '../../api'
 
@@ -151,6 +151,24 @@
   ])
 
   // ==================== 5. 构建下拉 ====================
+  // ==================== 5. 构建下拉 (全量版) ====================
+  // 用独立的全量端点（/list, size: 9999）构建市公司下拉，避免首屏分页只有 20 行时遗漏
+  // 后续页中才出现的市公司。返回的集合是全量的，与分页结果无关。
+  const fetchAllForDropdown = async (tjDate: string) => {
+    if (comOptions.value.length) return
+    try {
+      const res = await claimAverage.axiosRequestAnjunCxXny({ current: 1, size: 9999, tjDate, tjDate: tableApiParams.value.tjDate, comnameSgs: tableApiParams.value.comnameSgs })
+      if (Array.isArray(res) && res.length) {
+        const set = new Set<string>()
+        res.forEach((item) => { if (item.comnameSgs) set.add(item.comnameSgs) })
+        comOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
+        ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司`, type: 'success' })
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   const buildDeptOptions = (data: AnjunCxXnyData[]) => {
     if (comOptions.value.length) return
     const comSet = new Set<string>()
@@ -159,7 +177,7 @@
   }
 
   // ==================== 6. 表格 Hook ====================
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<AnjunCxXnyData>> => {
         const queryParams = {
@@ -173,7 +191,7 @@
         const records = page.records || []
         if (records.length) {
           if (!isInitialized) {
-            buildDeptOptions(records)
+            fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || '')
             isInitialized = true
           }
           currentMaxTjTime.value = records[0].maxTjTime || ''
@@ -216,10 +234,6 @@
   // ==================== 7. 操作 ====================
   const localHandleCurrentChange = (newCurrent: number) => {
     fetchData({ current: newCurrent })
-  }
-
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
   }
 
   const handleRefresh = () => {

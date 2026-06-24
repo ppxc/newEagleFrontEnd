@@ -57,7 +57,7 @@
         :scrollbar-always-on="true"
         empty-height="660px"
         merge-first-column
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <template #index="{ $index }">
@@ -72,7 +72,7 @@
   import { ref, computed } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import * as XLSX from 'xlsx'
   import { claimAverage } from '../../api'
 
@@ -156,16 +156,25 @@
   ])
 
   // ==================== 5. 构建下拉 ====================
-  const buildDeptOptions = (data: AnjunCxZgsData[]) => {
+  // 用独立的全量端点（/list, size: 9999）构建市公司下拉，避免首屏分页只有 20 行时遗漏
+  // 后续页中才出现的市公司。返回的 comnameSgs 集合是全量的，与分页结果无关。
+  const fetchAllForDropdown = async (tjDate: string) => {
     if (comOptions.value.length) return
-    const comSet = new Set<string>()
-    data.forEach((item) => { if (item.comnameSgs) comSet.add(item.comnameSgs) })
-    comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-    ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司`, type: 'success' })
+    try {
+      const res = await claimAverage.axiosRequestAnjunCxZgs({ current: 1, size: 9999, tjDate, comnameSgs: '' })
+      if (Array.isArray(res) && res.length) {
+        const comSet = new Set<string>()
+        res.forEach((item: AnjunCxZgsData) => { if (item.comnameSgs) comSet.add(item.comnameSgs) })
+        comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
+        ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司`, type: 'success' })
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   // ==================== 6. 表格 Hook ====================
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<AnjunCxZgsData>> => {
         const queryParams = {
@@ -178,13 +187,15 @@
         const page = (response ?? {}) as UseTableResult<AnjunCxZgsData>
         const records = page.records || []
         if (records.length) {
-          if (!isInitialized) {
-            buildDeptOptions(records)
-            isInitialized = true
-          }
           currentMaxTjTime.value = records[0].maxTjTime || ''
           if (!searchFormState.value.tjDate && records[0].maxTjTime) {
             searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10)
+          }
+          // 首屏只拿到分页数据，不能用于构建市公司下拉（可能遗漏 c公司）
+          // 市公司下拉由 fetchAllForDropdown 独立全量拉取
+          if (!isInitialized) {
+            fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || records[0].maxTjTime?.substring(0, 10) || '')
+            isInitialized = true
           }
         } else { currentMaxTjTime.value = '' }
         return { records, total: page.total ?? 0, current: params.current, size: params.size }
@@ -224,16 +235,17 @@
     fetchData({ current: newCurrent })
   }
 
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
-  }
-
   const handleRefresh = async () => {
+    // 重置初始化标志和下拉，强制重新拉全量
+    comOptions.value = []
+    isInitialized = false
     try {
-      const res = await claimAverage.axiosRequestAnjunCxZgs({ current: 1, size: 9999 })
+      // 先拉到分页数据用于 maxTjTime，再拉全量构建下拉
+      const res = await claimAverage.axiosRequestAnjunCxZgs({ current: 1, size: 9999, tjDate: tableApiParams.value.tjDate, comnameSgs: '' })
       if (Array.isArray(res) && res.length) {
-        buildDeptOptions(res)
         currentMaxTjTime.value = res[0].maxTjTime || ''
+        await fetchAllForDropdown(tableApiParams.value.tjDate || res[0].maxTjTime?.substring(0, 10) || '')
+        isInitialized = true
       }
       await fetchData()
     } catch { await fetchData() }

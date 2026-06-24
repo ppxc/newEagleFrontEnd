@@ -22,7 +22,7 @@
           </ElSpace>
         </template>
       </ArtTableHeader>
-      <ArtTable :loading="loading" :pagination="pagination" :data="tableData" :columns="columns" :height="tableHeight" :scrollbar-always-on="true" empty-height="660px" merge-first-column @pagination:size-change="localHandleSizeChange" @pagination:current-change="localHandleCurrentChange">
+      <ArtTable :loading="loading" :pagination="pagination" :data="tableData" :columns="columns" :height="tableHeight" :scrollbar-always-on="true" empty-height="660px" merge-first-column @pagination:size-change="handleSizeChange" @pagination:current-change="localHandleCurrentChange">
         <template #index="{ $index }"><span>{{ $index + 1 + (pagination.current - 1) * pagination.size }}</span></template>
       </ArtTable>
     </ElCard>
@@ -33,7 +33,7 @@
   import { ref, computed } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import * as XLSX from 'xlsx'
   import { policyYearLossRate } from '../../api'
   defineOptions({ name: 'PflbdnPinpaiTable' })
@@ -69,6 +69,24 @@
     { key: 'comnameSgs', label: '市公司', type: 'select', props: { placeholder: '请选择市公司', options: comOptions.value, clearable: true } },
     { key: 'brandname', label: '品牌', type: 'select', props: { placeholder: '请选择品牌', options: brandOptions.value, clearable: true } }
   ])
+
+  // ==================== 5. 构建下拉 (全量版) ====================
+  // 用独立的全量端点（/list, size: 9999）构建市公司下拉，避免首屏分页只有 20 行时遗漏
+  // 后续页中才出现的市公司。返回的集合是全量的，与分页结果无关。
+  const fetchAllForDropdown = async (tjDate: string) => {
+    if (comOptions.value.length) return
+    try {
+      const res = await policyYearLossRate.axiosRequestPflbdnPinpai({ current: 1, size: 9999, tjDate, tjDate: tableApiParams.value.tjDate || '', comnameSgs: tableApiParams.value.comnameSgs ?? '', brandname: tableApiParams.value.brandname ?? '' })
+      if (Array.isArray(res) && res.length) {
+        const set = new Set<string>()
+        res.forEach((item) => { if (item.comnameSgs) set.add(item.comnameSgs) })
+        comOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
+        ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司`, type: 'success' })
+      }
+    } catch {
+      /* ignore */
+    }
+  }
   const buildOptions = (data: Data[]) => {
     if (comOptions.value.length && brandOptions.value.length) return
     const comSet = new Set<string>(); const brandSet = new Set<string>()
@@ -77,7 +95,7 @@
     brandOptions.value = Array.from(brandSet).map((name) => ({ label: name, value: name }))
     ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司 / ${brandOptions.value.length} 个品牌`, type: 'success' })
   }
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, columns, columnChecks } = useTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<Data>> => {
         const queryParams = { current: params.current, size: params.size, tjDate: tableApiParams.value.tjDate || '', comnameSgs: tableApiParams.value.comnameSgs ?? '', brandname: tableApiParams.value.brandname ?? '' }
@@ -85,7 +103,7 @@
         const page = (response ?? {}) as UseTableResult<Data>
         const records = page.records || []
         if (records.length) {
-          if (!isInitialized) { buildOptions(records); isInitialized = true }
+          if (!isInitialized) { fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || ''); isInitialized = true }
           currentMaxTjTime.value = records[0].maxTjTime || ''
           if (!searchFormState.value.tjDate && records[0].maxTjTime) { searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10) }
         } else { currentMaxTjTime.value = '' }
@@ -123,7 +141,6 @@
     performance: { enableCache: true, cacheTime: 5 * 60 * 1000, debounceTime: 300, maxCacheSize: 100 }
   })
   const localHandleCurrentChange = (n: number) => { fetchData({ current: n }) }
-  const localHandleSizeChange = (n: number) => { fetchData({ size: n, current: 1 }) }
   const handleRefresh = async () => { try { const res = await policyYearLossRate.axiosRequestPflbdnPinpai({ current: 1, size: 9999 }); if (Array.isArray(res) && res.length) { buildOptions(res); currentMaxTjTime.value = res[0].maxTjTime || '' } await fetchData() } catch { await fetchData() } }
   const handleSearch = async () => { try { await searchBarRef.value?.validate(); tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }; refreshData() } catch {} }
   const handleReset = () => { Object.assign(searchFormState.value, DEFAULT_FORM); tableApiParams.value = { ...DEFAULT_PAGINATION, ...searchFormState.value }; refreshData() }

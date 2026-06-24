@@ -22,7 +22,7 @@
           </ElSpace>
         </template>
       </ArtTableHeader>
-      <ArtTable :loading="loading" :pagination="pagination" :data="tableData" :columns="columns" :height="tableHeight" :scrollbar-always-on="true" empty-height="660px" merge-first-column @pagination:size-change="localHandleSizeChange" @pagination:current-change="localHandleCurrentChange">
+      <ArtTable :loading="loading" :pagination="pagination" :data="tableData" :columns="columns" :height="tableHeight" :scrollbar-always-on="true" empty-height="660px" merge-first-column @pagination:size-change="handleSizeChange" @pagination:current-change="localHandleCurrentChange">
         <template #index="{ $index }"><span>{{ $index + 1 + (pagination.current - 1) * pagination.size }}</span></template>
       </ArtTable>
     </ElCard>
@@ -33,7 +33,7 @@
   import { ref, computed } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import * as XLSX from 'xlsx'
   import { policyYearLossRate } from '../../api'
   defineOptions({ name: 'PflbdnSyxzZgsTable' })
@@ -69,22 +69,33 @@
     { key: 'comname', label: '支公司', type: 'select', span: 5, props: { placeholder: '请选择支公司', options: zgsOptions.value, clearable: true } },
     { key: 'usenaturename', label: '使用性质', type: 'select', span: 5, props: { placeholder: '请选择使用性质', options: syxzOptions.value, clearable: true } }
   ])
-  const buildDeptOptions = (data: Data[]) => {
+
+  // ==================== 5. 构建下拉 (全量版) ====================
+  // 用独立的全量端点（/list, size: 9999）构建市公司/支公司/使用性质下拉，
+  // 避免首屏分页只有 20 行时遗漏后续页中的支公司/使用性质。返回的集合是全量的，与分页结果无关。
+  const fetchAllForDropdown = async (tjDate: string) => {
     if (comOptions.value.length && zgsOptions.value.length && syxzOptions.value.length) return
-    const comSet = new Set<string>()
-    const zgsSet = new Set<string>()
-    const syxzSet = new Set<string>()
-    data.forEach((item) => {
-      if (item.comnameSgs) comSet.add(item.comnameSgs)
-      if (item.comname) zgsSet.add(item.comname)
-      if (item.usenaturename) syxzSet.add(item.usenaturename)
-    })
-    comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-    zgsOptions.value = Array.from(zgsSet).map((name) => ({ label: name, value: name }))
-    syxzOptions.value = Array.from(syxzSet).map((name) => ({ label: name, value: name }))
-    ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司 / ${zgsOptions.value.length} 个支公司 / ${syxzOptions.value.length} 个使用性质`, type: 'success' })
+    try {
+      const res = await policyYearLossRate.axiosRequestPflbdnSyxzZgs({ current: 1, size: 9999, tjDate, comnameSgs: tableApiParams.value.comnameSgs ?? '', comname: tableApiParams.value.comname ?? '', usenaturename: tableApiParams.value.usenaturename ?? '' })
+      if (Array.isArray(res) && res.length) {
+        const comSet = new Set<string>()
+        const zgsSet = new Set<string>()
+        const syxzSet = new Set<string>()
+        res.forEach((item: Data) => {
+          if (item.comnameSgs) comSet.add(item.comnameSgs)
+          if (item.comname) zgsSet.add(item.comname)
+          if (item.usenaturename) syxzSet.add(item.usenaturename)
+        })
+        comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
+        zgsOptions.value = Array.from(zgsSet).map((name) => ({ label: name, value: name }))
+        syxzOptions.value = Array.from(syxzSet).map((name) => ({ label: name, value: name }))
+        ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司 / ${zgsOptions.value.length} 个支公司 / ${syxzOptions.value.length} 个使用性质`, type: 'success' })
+      }
+    } catch {
+      /* ignore */
+    }
   }
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, columns, columnChecks } = useTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<Data>> => {
         const queryParams = { current: params.current, size: params.size, tjDate: tableApiParams.value.tjDate || '', comnameSgs: tableApiParams.value.comnameSgs ?? '', comname: tableApiParams.value.comname ?? '', usenaturename: tableApiParams.value.usenaturename ?? '' }
@@ -92,7 +103,7 @@
         const page = (response ?? {}) as UseTableResult<Data>
         const records = page.records || []
         if (records.length) {
-          if (!isInitialized) { buildDeptOptions(records); isInitialized = true }
+          if (!isInitialized) { fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || ''); isInitialized = true }
           currentMaxTjTime.value = records[0].maxTjTime || ''
           if (!searchFormState.value.tjDate && records[0].maxTjTime) { searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10) }
         } else { currentMaxTjTime.value = '' }
@@ -135,8 +146,7 @@
     performance: { enableCache: true, cacheTime: 5 * 60 * 1000, debounceTime: 300, maxCacheSize: 100 }
   })
   const localHandleCurrentChange = (n: number) => { fetchData({ current: n }) }
-  const localHandleSizeChange = (n: number) => { fetchData({ size: n, current: 1 }) }
-  const handleRefresh = async () => { try { const res = await policyYearLossRate.axiosRequestPflbdnSyxzZgs({ current: 1, size: 9999 }); if (Array.isArray(res) && res.length) { buildDeptOptions(res); currentMaxTjTime.value = res[0].maxTjTime || '' } await fetchData() } catch { await fetchData() } }
+  const handleRefresh = async () => { try { await fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || ''); isInitialized = true; await fetchData() } catch { await fetchData() } }
   const handleSearch = async () => { try { await searchBarRef.value?.validate(); tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }; refreshData() } catch {} }
   const handleReset = () => { Object.assign(searchFormState.value, DEFAULT_FORM); tableApiParams.value = { ...DEFAULT_PAGINATION, ...searchFormState.value }; refreshData() }
   const exportColumns = (item: Data, i: number) => ({

@@ -56,7 +56,7 @@
         :height="tableHeight"
         :scrollbar-always-on="true"
         empty-height="660px"
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       >
         <template #index="{ $index }">
