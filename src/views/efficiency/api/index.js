@@ -275,6 +275,14 @@ export const dataReport = {
   /** 零结案-人员 - 分页 */
   axiosRequestLingjieRyPage(params) {
     return request.get({ url: '/zyxt/api/lingjie_ry/page', params })
+  },
+  /** 未决存量-案件类型 */
+  axiosRequestWjxs(params) {
+    return request.get({ url: '/zyxt/api/wjxs/list', params })
+  },
+  /** 未决存量-案件类型 - 分页 */
+  axiosRequestWjxsPage(params) {
+    return request.get({ url: '/zyxt/api/wjxs/page', params })
   }
 }
 
@@ -482,6 +490,42 @@ export const repairShop = {
   /** 维修单位关键指标 - 分页 */
   axiosRequestWxdwGjzbPage(params) {
     return request.get({ url: '/zyxt/api/wxdw_gjzb/page', params })
+  }
+}
+
+// ==================== 车均定损 ====================
+export const carAvgLoss = {
+  /** 车均定损-人员 */
+  axiosRequestChejunRy(params) {
+    return request.get({ url: '/zyxt/api/chejun_ry/list', params })
+  },
+  /** 车均定损-人员 - 分页 */
+  axiosRequestChejunRyPage(params) {
+    return request.get({ url: '/zyxt/api/chejun_ry/page', params })
+  },
+  /** 车均定损-处理部门 */
+  axiosRequestChejunClbm(params) {
+    return request.get({ url: '/zyxt/api/chejun_clbm/list', params })
+  },
+  /** 车均定损-处理部门 - 分页 */
+  axiosRequestChejunClbmPage(params) {
+    return request.get({ url: '/zyxt/api/chejun_clbm/page', params })
+  },
+  /** 车均定损-定损区域 */
+  axiosRequestChejunBm(params) {
+    return request.get({ url: '/zyxt/api/chejun_bm/list', params })
+  },
+  /** 车均定损-定损区域 - 分页 */
+  axiosRequestChejunBmPage(params) {
+    return request.get({ url: '/zyxt/api/chejun_bm/page', params })
+  },
+  /** 车均定损-市公司 */
+  axiosRequestChejunSgs(params) {
+    return request.get({ url: '/zyxt/api/chejun_sgs/list', params })
+  },
+  /** 车均定损-市公司 - 分页 */
+  axiosRequestChejunSgsPage(params) {
+    return request.get({ url: '/zyxt/api/chejun_sgs/page', params })
   }
 }
 

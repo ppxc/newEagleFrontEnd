@@ -300,9 +300,10 @@
       },
       "carAvgLoss": {
         "title": "车均定损",
-        "placeholder": {
-          "title": "车均定损-占位"
-        }
+        "ry": "车均定损-人员",
+        "clbm": "车均定损-处理部门",
+        "bm": "车均定损-定损区域",
+        "sgs": "车均定损-市公司"
       },
       "repairShop": {
         "title": "维修单位"
