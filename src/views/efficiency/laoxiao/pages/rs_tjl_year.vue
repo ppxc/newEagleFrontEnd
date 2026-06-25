@@ -98,7 +98,7 @@
   // 人伤跟踪量/调解量：仅 tjDate 筛选，无 comnameSgs 下拉
   const {
     searchBarRef, searchFormState, searchItems, rules,
-    fetchData, tableData, loading, tableError, pagination,
+     tableData, loading, tableError, pagination,
     handleSizeChange, handleCurrentChange, columns, columnChecks,
     currentMaxTjTime, tableApiParams,
     handleRefresh, handleSearch, handleReset
@@ -120,10 +120,6 @@
       }))
     ]
   })
-
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
-  }
 
   const exportColumns = (item: RsTjlYearData, index: number) => ({
     序号: index + 1,

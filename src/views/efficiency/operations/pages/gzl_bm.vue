@@ -62,11 +62,11 @@
         ref="tableRef"
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="computedTableHeight"
         :scrollbar-always-on="true"
-        merge-first-column
         empty-height="660px"
         @selection-change="handleSelectionChange"
         @row-click="handleRowClick"
@@ -132,6 +132,7 @@
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dailyWorkload } from '../../api'
   const VITE_API_PROXY_PORT_URL = import.meta.env.VITE_API_PROXY_PORT_URL
@@ -338,6 +339,8 @@
       maxCacheSize: 100
     }
   })
+
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
 
   // ==================== 8. 表格事件 ====================
   const tableRef = ref<any>(null)

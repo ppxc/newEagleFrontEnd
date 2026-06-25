@@ -51,12 +51,12 @@
       <ArtTable
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="tableHeight"
         :scrollbar-always-on="true"
         empty-height="660px"
-        merge-first-column
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
@@ -73,6 +73,7 @@
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { accidentYearLossRate } from '../../api'
 
@@ -203,6 +204,7 @@
     performance: { enableCache: true, cacheTime: 5 * 60 * 1000, debounceTime: 300, maxCacheSize: 100 }
   })
 
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
   const localHandleCurrentChange = (newCurrent: number) => { fetchData({ current: newCurrent }) }
 
   const handleRefresh = async () => {

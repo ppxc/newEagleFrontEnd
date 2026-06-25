@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-  import UserMap from './children/user-map.vue'
+  import UserMap from './children/user_map.vue'
 
   defineOptions({ name: 'PersonalMap' })
 

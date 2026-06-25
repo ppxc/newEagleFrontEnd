@@ -62,11 +62,11 @@
         ref="tableRef"
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="computedTableHeight"
         :scrollbar-always-on="true"
-        merge-first-column
         empty-height="660px"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
@@ -119,6 +119,7 @@
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
 
@@ -345,6 +346,8 @@
       maxCacheSize: 100
     }
   })
+
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
 
   // ==================== 7. 分页事件 ====================
   const tableRef = ref<any>(null)

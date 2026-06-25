@@ -14,6 +14,7 @@ export const useUserStore = defineStore(
     const searchHistory = ref<AppRouteRecord[]>([])
     const isLock = ref(false)
     const lockPassword = ref('')
+    const info = ref<Record<string, any> | null>(null)
 
     const getSettingState = computed(() => useSettingStore().$state)
     const getWorktabState = computed(() => useWorktabStore().$state)
@@ -40,6 +41,7 @@ export const useUserStore = defineStore(
       searchHistory,
       isLock,
       lockPassword,
+      info,
       getSettingState,
       getWorktabState,
       setLanguage,

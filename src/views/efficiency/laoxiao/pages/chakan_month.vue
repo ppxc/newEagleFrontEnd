@@ -127,10 +127,6 @@
     ]
   })
 
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
-  }
-
   const exportColumns = (item: ChakanMonthData, index: number) => ({
     序号: index + 1,
     统计日期: item.tjdate,

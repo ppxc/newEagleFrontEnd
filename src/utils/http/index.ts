@@ -49,7 +49,7 @@ const axiosInstance = axios.create({
   transformResponse: [
     (data, headers) => {
 
-      const contentType = headers['content-type']
+      const contentType = headers['content-type'] as string
       if (contentType?.includes('application/json')) {
         try {
           return JSON.parse(data)
@@ -65,8 +65,8 @@ const axiosInstance = axios.create({
 /** 请求拦截器 */
 axiosInstance.interceptors.request.use(
   (request: InternalAxiosRequestConfig) => {
-    const { accessToken } = useUserStore()
-    if (accessToken) request.headers.set('Authorization', accessToken)
+    const accessToken = localStorage.getItem('access_token')
+    if (accessToken) request.headers.set('Authorization', `Bearer ${accessToken}`)
 
     if (request.data && !(request.data instanceof FormData) && !request.headers['Content-Type']) {
       request.headers.set('Content-Type', 'application/json')
@@ -127,7 +127,8 @@ function resetUnauthorizedError() {
 /** 退出登录函数 */
 function logOut() {
   setTimeout(() => {
-    useUserStore().logOut()
+    localStorage.removeItem('access_token')
+    window.location.reload()
   }, LOGOUT_DELAY)
 }
 

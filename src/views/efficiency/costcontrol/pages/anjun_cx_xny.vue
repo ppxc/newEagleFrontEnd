@@ -3,16 +3,15 @@
     <ArtSearchBar
       v-model="searchFormState"
       :items="searchItems"
-     
-     
-      :show-expand="false" :show-reset-button="true"
+      :show-expand="false"
+      :show-reset-button="true"
       :show-search-button="true"
       :disabled-search-button="false"
       @search="handleSearch"
       @reset="handleReset"
     />
 
-    <ElCard class="flex-1 art-table-card" style="margin-top: 0;padding: 5px;">
+    <ElCard class="flex-1 art-table-card" style="margin-top: 0; padding: 5px">
       <template #header>
         <div class="flex-cb">
           <h4 class="m-0">案均赔款-新能源（车险）【统计时间：{{ currentMaxTjTime }}】</h4>
@@ -49,12 +48,12 @@
       <ArtTable
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="tableHeight"
         :scrollbar-always-on="true"
         empty-height="660px"
-        merge-first-column
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
@@ -71,6 +70,7 @@
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { claimAverage } from '../../api'
 
@@ -127,9 +127,21 @@
     maxTjTime: string | null
   }
 
-  interface SelectOption { label: string; value: string }
-  interface UseTableParams { current: number; size: number; [key: string]: any }
-  interface UseTableResult<T> { records: T[]; total: number; current: number; size: number }
+  interface SelectOption {
+    label: string
+    value: string
+  }
+  interface UseTableParams {
+    current: number
+    size: number
+    [key: string]: any
+  }
+  interface UseTableResult<T> {
+    records: T[]
+    total: number
+    current: number
+    size: number
+  }
 
   // ==================== 2. 常量 ====================
   const tableHeight = 'calc(100vh - 330px)'
@@ -146,42 +158,67 @@
   const tableApiParams = ref({ ...DEFAULT_PAGINATION, ...searchFormState.value })
 
   const searchItems = computed(() => [
-    { key: 'tjDate', label: '统计时间', type: 'date', props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' } },
-    { key: 'comnameSgs', label: '市公司', type: 'select', props: { placeholder: '请选择市公司', options: comOptions.value, clearable: true } }
+    {
+      key: 'tjDate',
+      label: '统计时间',
+      type: 'date',
+      props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' }
+    },
+    {
+      key: 'comnameSgs',
+      label: '市公司',
+      type: 'select',
+      props: { placeholder: '请选择市公司', options: comOptions.value, clearable: true }
+    }
   ])
 
   // ==================== 5. 构建下拉 ====================
   // ==================== 5. 构建下拉 (全量版) ====================
   // 用独立的全量端点（/list, size: 9999）构建市公司下拉，避免首屏分页只有 20 行时遗漏
   // 后续页中才出现的市公司。返回的集合是全量的，与分页结果无关。
-  const fetchAllForDropdown = async (tjDate: string) => {
+  const fetchAllForDropdown = async () => {
     if (comOptions.value.length) return
     try {
-      const res = await claimAverage.axiosRequestAnjunCxXny({ current: 1, size: 9999, tjDate, tjDate: tableApiParams.value.tjDate, comnameSgs: tableApiParams.value.comnameSgs })
+      const res = await claimAverage.axiosRequestAnjunCxXny({
+        current: 1,
+        size: 9999,
+        tjDate: tableApiParams.value.tjDate,
+        comnameSgs: tableApiParams.value.comnameSgs
+      })
       if (Array.isArray(res) && res.length) {
         const set = new Set<string>()
-        res.forEach((item) => { if (item.comnameSgs) set.add(item.comnameSgs) })
+        res.forEach((item) => {
+          if (item.comnameSgs) set.add(item.comnameSgs)
+        })
         comOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
-        ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司`, type: 'success' })
+        ElNotification({
+          title: '提示',
+          message: `已加载：${comOptions.value.length} 个市公司`,
+          type: 'success'
+        })
       }
     } catch {
       /* ignore */
     }
   }
 
-  const buildDeptOptions = (data: AnjunCxXnyData[]) => {
-    if (comOptions.value.length) return
-    const comSet = new Set<string>()
-    data.forEach((item) => { if (item.comnameSgs) comSet.add(item.comnameSgs) })
-    comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-  }
-
   // ==================== 6. 表格 Hook ====================
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
+  const {
+    data: tableData,
+    loading,
+    error: tableError,
+    pagination,
+    fetchData,
+    refreshData,
+    handleSizeChange,
+    columns,
+    columnChecks
+  } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<AnjunCxXnyData>> => {
         const queryParams = {
-          current: params.current, size: params.size,
+          current: params.current,
+          size: params.size,
           tjDate: tableApiParams.value.tjDate,
           comnameSgs: tableApiParams.value.comnameSgs
         }
@@ -198,15 +235,37 @@
           if (!searchFormState.value.tjDate && records[0].maxTjTime) {
             searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10)
           }
-        } else { currentMaxTjTime.value = '' }
+        } else {
+          currentMaxTjTime.value = ''
+        }
         return { records, total: page.total ?? 0, current: params.current, size: params.size }
       },
       apiParams: tableApiParams.value,
       immediate: true,
       columnsFactory: () => [
-        { prop: 'comnameSgs', label: '市公司', minWidth: 200, align: 'center', fixed: 'left', sortable: true },
-        { prop: 'xnyflag', label: '新能源', minWidth: 120, align: 'center', fixed: 'left', sortable: true },
-        { prop: 'sumpaidZt', label: '整体车险金额(元)', width: 160, align: 'center', sortable: true },
+        {
+          prop: 'comnameSgs',
+          label: '市公司',
+          minWidth: 200,
+          align: 'center',
+          fixed: 'left',
+          sortable: true
+        },
+        {
+          prop: 'xnyflag',
+          label: '新能源',
+          minWidth: 120,
+          align: 'center',
+          fixed: 'left',
+          sortable: true
+        },
+        {
+          prop: 'sumpaidZt',
+          label: '整体车险金额(元)',
+          width: 160,
+          align: 'center',
+          sortable: true
+        },
         { prop: 'ajlZt', label: '整体车险结案件', width: 140, align: 'center', sortable: true },
         { prop: 'ajZt', label: '整体车险案均(元)', width: 160, align: 'center', sortable: true },
         { prop: 'ajZtTb', label: '整体同比', width: 100, align: 'center', sortable: true },
@@ -218,18 +277,37 @@
         { prop: 'ajlRs', label: '人伤结案件', width: 120, align: 'center', sortable: true },
         { prop: 'ajRs', label: '人伤案均(元)', width: 140, align: 'center', sortable: true },
         { prop: 'ajRsTb', label: '人伤同比', width: 100, align: 'center', sortable: true },
-        { prop: 'sumpaidDza', label: '交强险金额(元)', width: 140, align: 'center', sortable: true },
+        {
+          prop: 'sumpaidDza',
+          label: '交强险金额(元)',
+          width: 140,
+          align: 'center',
+          sortable: true
+        },
         { prop: 'ajlDza', label: '交强险结案件', width: 130, align: 'center', sortable: true },
         { prop: 'ajDza', label: '交强险案均(元)', width: 140, align: 'center', sortable: true },
         { prop: 'ajDzaTb', label: '交强同比', width: 100, align: 'center', sortable: true },
-        { prop: 'sumpaidDaa', label: '商业险金额(元)', width: 140, align: 'center', sortable: true },
+        {
+          prop: 'sumpaidDaa',
+          label: '商业险金额(元)',
+          width: 140,
+          align: 'center',
+          sortable: true
+        },
         { prop: 'ajlDaa', label: '商业险结案件', width: 130, align: 'center', sortable: true },
         { prop: 'ajDaa', label: '商业险案均(元)', width: 140, align: 'center', sortable: true },
         { prop: 'ajDaaTb', label: '商业同比', width: 100, align: 'center', sortable: true }
       ]
     },
-    performance: { enableCache: true, cacheTime: 5 * 60 * 1000, debounceTime: 300, maxCacheSize: 100 }
+    performance: {
+      enableCache: true,
+      cacheTime: 5 * 60 * 1000,
+      debounceTime: 300,
+      maxCacheSize: 100
+    }
   })
+
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
 
   // ==================== 7. 操作 ====================
   const localHandleCurrentChange = (newCurrent: number) => {
@@ -253,22 +331,49 @@
 
   // ==================== 8. 导出 ====================
   const exportColumns = (item: AnjunCxXnyData, index: number) => ({
-    序号: index + 1, 市公司: item.comnameSgs, 新能源: item.xnyflag,
-    '整体车险金额(元)': item.sumpaidZt, '整体车险结案件': item.ajlZt, '整体车险案均(元)': item.ajZt, '整体同比': item.ajZtTb,
-    '车损金额(元)': item.sumpaidCs, '车损结案件': item.ajlCs, '车损案均': item.ajCs, '车损同比': item.ajCsTb,
-    '人伤金额(元)': item.sumpaidRs, '人伤结案件': item.ajlRs, '人伤案均(元)': item.ajRs, '人伤同比': item.ajRsTb,
-    '交强险金额(元)': item.sumpaidDza, '交强险结案件': item.ajlDza, '交强险案均(元)': item.ajDza, '交强同比': item.ajDzaTb,
-    '商业险金额(元)': item.sumpaidDaa, '商业险结案件': item.ajlDaa, '商业险案均(元)': item.ajDaa, '商业同比': item.ajDaaTb,
-    '去年整体金额': item.sumpaidZtQn, '去年整体案均': item.ajZtQn, '去年车损金额': item.sumpaidCsQn, '去年车损案均': item.ajCsQn,
-    '去年人伤金额': item.sumpaidRsQn, '去年人伤案均': item.ajRsQn, '去年交强金额': item.sumpaidDzaQn, '去年交强案均': item.ajDzaQn,
-    '去年商业金额': item.sumpaidDaaQn, '去年商业案均': item.ajDaaQn
+    序号: index + 1,
+    市公司: item.comnameSgs,
+    新能源: item.xnyflag,
+    '整体车险金额(元)': item.sumpaidZt,
+    整体车险结案件: item.ajlZt,
+    '整体车险案均(元)': item.ajZt,
+    整体同比: item.ajZtTb,
+    '车损金额(元)': item.sumpaidCs,
+    车损结案件: item.ajlCs,
+    车损案均: item.ajCs,
+    车损同比: item.ajCsTb,
+    '人伤金额(元)': item.sumpaidRs,
+    人伤结案件: item.ajlRs,
+    '人伤案均(元)': item.ajRs,
+    人伤同比: item.ajRsTb,
+    '交强险金额(元)': item.sumpaidDza,
+    交强险结案件: item.ajlDza,
+    '交强险案均(元)': item.ajDza,
+    交强同比: item.ajDzaTb,
+    '商业险金额(元)': item.sumpaidDaa,
+    商业险结案件: item.ajlDaa,
+    '商业险案均(元)': item.ajDaa,
+    商业同比: item.ajDaaTb,
+    去年整体金额: item.sumpaidZtQn,
+    去年整体案均: item.ajZtQn,
+    去年车损金额: item.sumpaidCsQn,
+    去年车损案均: item.ajCsQn,
+    去年人伤金额: item.sumpaidRsQn,
+    去年人伤案均: item.ajRsQn,
+    去年交强金额: item.sumpaidDzaQn,
+    去年交强案均: item.ajDzaQn,
+    去年商业金额: item.sumpaidDaaQn,
+    去年商业案均: item.ajDaaQn
   })
 
   const dateSuffix = () => new Date().toISOString().slice(0, 10)
 
   const handleExportCurrent = () => {
     const data = tableData.value as AnjunCxXnyData[]
-    if (!data.length) { ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' }); return }
+    if (!data.length) {
+      ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' })
+      return
+    }
     const exportData = data.map(exportColumns)
     const ws = XLSX.utils.json_to_sheet(exportData)
     const wb = XLSX.utils.book_new()
@@ -281,18 +386,26 @@
     try {
       const res = await claimAverage.axiosRequestAnjunCxXny(tableApiParams.value)
       const data = (Array.isArray(res) ? res : []) as AnjunCxXnyData[]
-      if (!data.length) { ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' }); return }
+      if (!data.length) {
+        ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' })
+        return
+      }
       const exportData = data.map(exportColumns)
       const ws = XLSX.utils.json_to_sheet(exportData)
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, '案均赔款-新能源（车险）')
       XLSX.writeFile(wb, `案均赔款-新能源（车险）_全部_${dateSuffix()}.xlsx`)
       ElNotification({ title: '成功', message: `${data.length} 条数据导出成功`, type: 'success' })
-    } catch { ElNotification({ title: '错误', message: '导出失败', type: 'error' }) }
+    } catch {
+      ElNotification({ title: '错误', message: '导出失败', type: 'error' })
+    }
   }
 </script>
 
 <style scoped>
   /* 搜索栏表单项：文字标签与选择框在所属列中垂直居中 */
-  :deep(.art-search-bar .el-form-item) { align-items: center; margin-bottom: 0; }
+  :deep(.art-search-bar .el-form-item) {
+    align-items: center;
+    margin-bottom: 0;
+  }
 </style>

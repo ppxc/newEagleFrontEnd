@@ -61,11 +61,11 @@
         ref="tableRef"
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="computedTableHeight"
         :scrollbar-always-on="true"
-        merge-first-column
         empty-height="660px"
         @selection-change="handleSelectionChange"
         @row-click="handleRowClick"

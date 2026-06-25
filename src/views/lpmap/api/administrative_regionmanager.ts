@@ -9,7 +9,7 @@ export class AdministrativeRegionManager {
   private static readonly CACHE_KEY = 'administrative_district_cache'
   private static readonly CACHE_DURATION = 30 * 24 * 60 * 60 * 1000 // 30天的毫秒数
 
-  private showingDistricts = ref(false)
+  showingDistricts = ref(false)
   private loadingDistricts = ref(false)
   private districtLayer: any = null
   private labelLayer: any = null
@@ -140,7 +140,7 @@ export class AdministrativeRegionManager {
             if (searchData.result.length > 0) {
               // 寻找最匹配的结果，增加安全检查防止undefined错误
               const matchedResult = searchData.result.find(
-                (item) =>
+                (item: any) =>
                   item &&
                   Array.isArray(item) &&
                   item[0] &&
@@ -382,7 +382,7 @@ export class AdministrativeRegionManager {
 
     // district.polygon 是一个二维数组 [[lng, lat, lng, lat, ...]]
     if (Array.isArray(district.polygon)) {
-      district.polygon.forEach((polygonRing, ringIndex) => {
+      district.polygon.forEach((polygonRing: any, ringIndex: number) => {
         if (!Array.isArray(polygonRing) || polygonRing.length < 6) {
           // 至少3个点（6个坐标值）
           console.warn('跳过无效的多边形环:', polygonRing)

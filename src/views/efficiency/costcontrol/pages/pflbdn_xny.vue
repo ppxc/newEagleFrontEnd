@@ -22,7 +22,7 @@
           </ElSpace>
         </template>
       </ArtTableHeader>
-      <ArtTable :loading="loading" :pagination="pagination" :data="tableData" :columns="columns" :height="tableHeight" :scrollbar-always-on="true" empty-height="660px" merge-first-column @pagination:size-change="handleSizeChange" @pagination:current-change="localHandleCurrentChange">
+      <ArtTable :loading="loading" :pagination="pagination" :data="mergedData" :span-method="spanMethod" :columns="columns" :height="tableHeight" :scrollbar-always-on="true" empty-height="660px" @pagination:size-change="handleSizeChange" @pagination:current-change="localHandleCurrentChange">
         <template #index="{ $index }"><span>{{ $index + 1 + (pagination.current - 1) * pagination.size }}</span></template>
       </ArtTable>
     </ElCard>
@@ -34,6 +34,7 @@
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { policyYearLossRate } from '../../api'
   defineOptions({ name: 'PflbdnXnyTable' })
@@ -142,6 +143,7 @@
     },
     performance: { enableCache: true, cacheTime: 5 * 60 * 1000, debounceTime: 300, maxCacheSize: 100 }
   })
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
   const localHandleCurrentChange = (n: number) => { fetchData({ current: n }) }
   const handleRefresh = async () => { try { const res = await policyYearLossRate.axiosRequestPflbdnXny({ current: 1, size: 9999 }); if (Array.isArray(res) && res.length) { buildOptions(res); currentMaxTjTime.value = res[0].maxTjTime || '' } await fetchData() } catch { await fetchData() } }
   const handleSearch = async () => { try { await searchBarRef.value?.validate(); tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }; refreshData() } catch {} }

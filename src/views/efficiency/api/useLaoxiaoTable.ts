@@ -53,7 +53,7 @@ export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
     tjDate: [{ required: false, message: '请选择统计时间', trigger: 'change' }]
   }
   const searchFormState = ref({ ...defaultForm })
-  const tableApiParams = ref({ current: 1, size: defaultSize, ...searchFormState.value })
+  const tableApiParams = ref<Record<string, any>>({ current: 1, size: defaultSize, ...searchFormState.value })
 
   // ==================== 搜索表单配置 ====================
   const searchItems = computed(() => {
