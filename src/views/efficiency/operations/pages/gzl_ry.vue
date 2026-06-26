@@ -6,8 +6,8 @@
       v-model="searchFormState"
       :items="searchItems"
       :rules="rules"
-      :is-expand="false"
-      :show-expand="true"
+      :is-expand="true"
+      :show-expand="false"
       :show-reset-button="true"
       :show-search-button="true"
       :disabled-search-button="false"
@@ -261,19 +261,22 @@
       key: 'startDate',
       label: '开始日期',
       type: 'date',
-      props: { placeholder: '选择开始日期', valueFormat: 'YYYY-MM-DD' }
+      props: { placeholder: '选择开始日期', valueFormat: 'YYYY-MM-DD' },
+      span: 4
     },
     {
       key: 'endDate',
       label: '结束日期',
       type: 'date',
-      props: { placeholder: '选择结束日期', valueFormat: 'YYYY-MM-DD' }
+      props: { placeholder: '选择结束日期', valueFormat: 'YYYY-MM-DD' },
+      span: 4
     },
     {
       key: 'comName',
       label: '部门',
       type: 'select',
-      props: { placeholder: '请选择部门', options: comOptions.value, clearable: true }
+      props: { placeholder: '请选择部门', options: comOptions.value, clearable: true },
+      span: 4
     },
     {
       key: 'groups',
@@ -284,13 +287,15 @@
         options: groupOptions.value,
         clearable: true,
         disabled: !searchFormState.value.comName
-      }
+      },
+      span: 4
     },
     {
       key: 'userName',
       label: '人员',
       type: 'input',
-      props: { placeholder: '请输入人员名称' }
+      props: { placeholder: '请输入人员名称' },
+      span: 4
     }
   ])
 

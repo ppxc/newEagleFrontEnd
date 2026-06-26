@@ -13,7 +13,7 @@ import { useTable } from '@/hooks/core/useTable'
  * 全量端点（listApi）后端返回 List<T>（仅用于构建 comnameSgs 下拉的去重 Set）
  */
 
-export interface UseLaoxiaoTableOptions<T> {
+export interface UseLaoxiaoTableOptions {
   /** 后端分页端点（返回 PageResult<T>） */
   pageApi: (params: any) => Promise<any>
   /** 后端全量端点（用于构造 comnameSgs 下拉的去重集合） */
@@ -39,7 +39,7 @@ interface UseTableResult<T> {
   size: number
 }
 
-export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
+export function useLaoxiaoTable(opts: UseLaoxiaoTableOptions) {
   const hasComnameSgs = opts.hasComnameSgs ?? true
   const defaultSize = opts.defaultSize ?? 20
   const defaultForm: Record<string, any> = { tjDate: '', comnameSgs: '' }
@@ -53,7 +53,11 @@ export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
     tjDate: [{ required: false, message: '请选择统计时间', trigger: 'change' }]
   }
   const searchFormState = ref({ ...defaultForm })
-  const tableApiParams = ref<Record<string, any>>({ current: 1, size: defaultSize, ...searchFormState.value })
+  const tableApiParams = ref<Record<string, any>>({
+    current: 1,
+    size: defaultSize,
+    ...searchFormState.value
+  })
 
   // ==================== 搜索表单配置 ====================
   const searchItems = computed(() => {
@@ -110,7 +114,7 @@ export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
     columnChecks
   } = useTable({
     core: {
-      apiFn: async (params: UseTableParams): Promise<UseTableResult<T>> => {
+      apiFn: async (params: UseTableParams): Promise<UseTableResult<any>> => {
         const queryParams: Record<string, any> = {
           current: params.current,
           size: params.size,
@@ -121,8 +125,8 @@ export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
         }
         // 后端 /page 端点直接返回 { records, total, current, size }
         const response = await opts.pageApi(queryParams)
-        const page = (response ?? {}) as UseTableResult<T>
-        const records = (page.records || []) as T[]
+        const page = (response ?? {}) as UseTableResult<any>
+        const records = (page.records || []) as any[]
         if (records.length) {
           const firstRecord = records[0] as any
           currentMaxTjTime.value = firstRecord.maxTjTime || ''
@@ -179,9 +183,7 @@ export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
         })
         if (Array.isArray(res) && res.length) {
           currentMaxTjTime.value = (res[0] as any).maxTjTime || ''
-          buildComnameSgsOptions(
-            tableApiParams.value.tjDate || (res[0] as any).maxTjTime || ''
-          )
+          buildComnameSgsOptions(tableApiParams.value.tjDate || (res[0] as any).maxTjTime || '')
         }
       } catch {
         /* ignore */

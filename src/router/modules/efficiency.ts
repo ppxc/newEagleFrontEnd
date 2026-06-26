@@ -757,6 +757,17 @@ export const efficiencyRoutes: AppRouteRecord[] = [
             }
           }
         ]
+      },
+      // ==================== 工作量钻取图 ====================
+      {
+        path: 'workload_drill',
+        name: 'LaoxiaoWorkloadDrill',
+        component: '/efficiency/laoxiao/pages/workload/WorkloadDrillChart',
+        meta: {
+          title: 'menus.laoxiao.workloadDrill.title',
+          keepAlive: false,
+          roles: ['R_ADMIN', 'R_SUPER']
+        }
       }
     ]
   }

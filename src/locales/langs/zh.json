@@ -320,6 +320,9 @@
       "monthDay": {
         "title": "月度-每天"
       },
+      "workloadDrill": {
+        "title": "工作量钻取图"
+      },
       "workloadYearMonth": {
         "title": "年度工作量-每月"
       },

@@ -358,8 +358,8 @@
     if (selectedGroupsname.value) params.set('groupsname', selectedGroupsname.value)
     const query = params.toString()
     return query
-      ? `/efficiency/operations/pages/workload/workload-drill?${query}`
-      : '/efficiency/operations/pages/workload/workload-drill'
+      ? `/efficiency/laoxiao/pages/workload/workload_drill?${query}`
+      : '/efficiency/laoxiao/pages/workload/workload_drill'
   }
 
   // 钻取时层级变化 → 重新加载数据
