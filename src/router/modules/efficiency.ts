@@ -419,15 +419,6 @@ export const efficiencyRoutes: AppRouteRecord[] = [
               roles: ['R_ADMIN', 'R_SUPER']
             }
           },
-          {
-            path: 'pflbdn_pinpai',
-            name: 'PflbdnPinpai',
-            component: '/efficiency/costcontrol/pages/pflbdn_pinpai',
-            meta: {
-              title: '保单年-品牌',
-              keepAlive: false,
-              roles: ['R_ADMIN', 'R_SUPER']
-            }
           },
           {
             path: 'pflbdn_xny',

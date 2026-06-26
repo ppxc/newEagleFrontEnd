@@ -404,14 +404,6 @@ export const policyYearLossRate = {
     return request.get({ url: '/zyxt/api/pflbdn_syxz/page', params })
   },
   /** 保单年赔付率-品牌 (无支公司) */
-  axiosRequestPflbdnPinpai(params) {
-    return request.get({ url: '/zyxt/api/pflbdn_pinpai/list', params })
-  },
-  /** 保单年赔付率-品牌 - 分页 */
-  axiosRequestPflbdnPinpaiPage(params) {
-    return request.get({ url: '/zyxt/api/pflbdn_pinpai/page', params })
-  },
-  /** 保单年赔付率-新能源 */
   axiosRequestPflbdnXny(params) {
     return request.get({ url: '/zyxt/api/pflbdn_xny/list', params })
   },

@@ -30,11 +30,41 @@
  * ```
  */
 
-import { useTable } from '@/hooks/core/useTable'
+import { useTable, CacheInvalidationStrategy } from '@/hooks/core/useTable'
 
-// 返回类型由 useTable 推导，避免重复导出
+/**
+ * useEfficiencyTable — efficiency 模块专用的 useTable 包装
+ *
+ * ## 修复分页
+ *
+ * useTable 内部的 `handleSizeChange` / `handleCurrentChange` 调用
+ * `getData()`（即 `getDataByPage`），每次都会重置 pagination.current = 1，
+ * 导致翻页永远回到第 1 页、切换每页条数无效。
+ *
+ * 本包装 override 这两个方法，直接调用 `fetchData`（useTable 内部的 `getData`，
+ * 不重置页码），并传入显式 `{ current, size }` 参数，
+ * 确保 apiFn 收到正确的分页参数。与 costcontrol 页面的
+ * `localHandleCurrentChange = (n) => fetchData({current: n})` 原理一致。
+ */
 export function useEfficiencyTable<TApiFn extends (params: any) => Promise<any>>(
   config: Parameters<typeof useTable<TApiFn>>[0]
 ) {
-  return useTable<TApiFn>(config)
+  const result = useTable<TApiFn>(config)
+
+  /** 当前页变化：直接调用 fetchData 传入新页码，不经过 getDataByPage（不重置页码） */
+  const handleSizeChange = async (newSize: number): Promise<void> => {
+    result.clearCache(CacheInvalidationStrategy.CLEAR_CURRENT, '分页大小变化')
+    await result.fetchData({ current: 1, size: newSize } as any)
+  }
+
+  /** 当前页变化：直接调用 fetchData 传入新页码，不经过 getDataByPage（不重置页码） */
+  const handleCurrentChange = async (newCurrent: number): Promise<void> => {
+    await result.fetchData({ current: newCurrent } as any)
+  }
+
+  return {
+    ...result,
+    handleSizeChange,
+    handleCurrentChange
+  }
 }
