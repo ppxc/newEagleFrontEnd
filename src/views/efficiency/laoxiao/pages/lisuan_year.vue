@@ -51,7 +51,8 @@
       <ArtTable
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="tableHeight"
         :scrollbar-always-on="true"
@@ -73,7 +74,7 @@
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
   import { useLaoxiaoTable } from '../../api/useLaoxiaoTable'
-
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   defineOptions({ name: 'LisuanYearTable' })
 
   interface LisuanYearData {
@@ -122,7 +123,9 @@
       }))
     ]
   })
-
+  
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
+  
   const exportColumns = (item: LisuanYearData, index: number) => ({
     序号: index + 1,
     统计日期: item.tjdate,

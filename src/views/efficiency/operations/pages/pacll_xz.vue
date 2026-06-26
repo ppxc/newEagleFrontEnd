@@ -73,7 +73,7 @@
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
-import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
 
@@ -184,7 +184,12 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   const fetchAllForDropdown = async (tjDate: string) => {
     if (Object.keys(deptGroupMap.value).length) return
     try {
-      const res = await dataReport.axiosRequestPacllXz({ current: 1, size: 9999, tjDate, comname: '' })
+      const res = await dataReport.axiosRequestPacllXz({
+        current: 1,
+        size: 9999,
+        tjDate,
+        comname: ''
+      })
       if (Array.isArray(res) && res.length) {
         const comSet = new Set<string>()
         const tempDeptGroupMap: DeptGroupMap = {}
@@ -210,53 +215,59 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
           }
         })
         comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-        Object.keys(tempDeptGroupMap).forEach((dept) => { tempDeptGroupMap[dept] = sortGroupByCode(tempDeptGroupMap[dept]) })
+        Object.keys(tempDeptGroupMap).forEach((dept) => {
+          tempDeptGroupMap[dept] = sortGroupByCode(tempDeptGroupMap[dept])
+        })
         deptGroupMap.value = tempDeptGroupMap
-        ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个部门，共 ${groupCount} 个小组`, type: 'success' })
+        ElNotification({
+          title: '提示',
+          message: `已加载：${comOptions.value.length} 个部门，共 ${groupCount} 个小组`,
+          type: 'success'
+        })
       }
     } catch {
       /* ignore */
     }
   }
 
-  const buildDeptGroupMap = (data: PacllXzData[]) => {
-    if (Object.keys(deptGroupMap.value).length) return
-    const comSet = new Set<string>()
-    const tempDeptGroupMap: DeptGroupMap = {}
-    const seenGroups = new Set<string>()
-    let groupCount = 0
+  // const buildDeptGroupMap = (data: PacllXzData[]) => {
+  //   if (Object.keys(deptGroupMap.value).length) return
+  //   const comSet = new Set<string>()
+  //   const tempDeptGroupMap: DeptGroupMap = {}
+  //   const seenGroups = new Set<string>()
+  //   let groupCount = 0
 
-    data.forEach((item) => {
-      if (!item.comname) return
-      comSet.add(item.comname)
-      if (item.groups && item.groupscode) {
-        if (!tempDeptGroupMap[item.comname]) tempDeptGroupMap[item.comname] = []
-        const exists = tempDeptGroupMap[item.comname].some((g) => g.value === item.groups)
-        if (!exists) {
-          tempDeptGroupMap[item.comname].push({
-            label: item.groups,
-            value: item.groups,
-            groupsCode: item.groupscode
-          })
-          if (!seenGroups.has(item.groups)) {
-            seenGroups.add(item.groups)
-            groupCount++
-          }
-        }
-      }
-    })
+  //   data.forEach((item) => {
+  //     if (!item.comname) return
+  //     comSet.add(item.comname)
+  //     if (item.groups && item.groupscode) {
+  //       if (!tempDeptGroupMap[item.comname]) tempDeptGroupMap[item.comname] = []
+  //       const exists = tempDeptGroupMap[item.comname].some((g) => g.value === item.groups)
+  //       if (!exists) {
+  //         tempDeptGroupMap[item.comname].push({
+  //           label: item.groups,
+  //           value: item.groups,
+  //           groupsCode: item.groupscode
+  //         })
+  //         if (!seenGroups.has(item.groups)) {
+  //           seenGroups.add(item.groups)
+  //           groupCount++
+  //         }
+  //       }
+  //     }
+  //   })
 
-    comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-    Object.keys(tempDeptGroupMap).forEach((dept) => {
-      tempDeptGroupMap[dept] = sortGroupByCode(tempDeptGroupMap[dept])
-    })
-    deptGroupMap.value = tempDeptGroupMap
-    ElNotification({
-      title: '提示',
-      message: `已加载：${comOptions.value.length} 个部门，共 ${groupCount} 个小组`,
-      type: 'success'
-    })
-  }
+  //   comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
+  //   Object.keys(tempDeptGroupMap).forEach((dept) => {
+  //     tempDeptGroupMap[dept] = sortGroupByCode(tempDeptGroupMap[dept])
+  //   })
+  //   deptGroupMap.value = tempDeptGroupMap
+  //   ElNotification({
+  //     title: '提示',
+  //     message: `已加载：${comOptions.value.length} 个部门，共 ${groupCount} 个小组`,
+  //     type: 'success'
+  //   })
+  // }
 
   // ==================== 7. 级联监听 ====================
   watch(
@@ -389,14 +400,23 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
     comOptions.value = []
     isInitialized = false
     try {
-      const res = await dataReport.axiosRequestPacllXz({ current: 1, size: 9999, tjDate: tableApiParams.value.tjDate, comname: '' })
+      const res = await dataReport.axiosRequestPacllXz({
+        current: 1,
+        size: 9999,
+        tjDate: tableApiParams.value.tjDate,
+        comname: ''
+      })
       if (Array.isArray(res) && res.length) {
         currentMaxTjTime.value = res[0].maxTjTime || ''
-        await fetchAllForDropdown(tableApiParams.value.tjDate || res[0].maxTjTime?.substring(0, 10) || '')
+        await fetchAllForDropdown(
+          tableApiParams.value.tjDate || res[0].maxTjTime?.substring(0, 10) || ''
+        )
         isInitialized = true
       }
       await fetchData()
-    } catch { await fetchData() }
+    } catch {
+      await fetchData()
+    }
   }
 
   const handleSearch = async () => {

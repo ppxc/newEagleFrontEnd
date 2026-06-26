@@ -14,7 +14,7 @@
       @reset="handleReset"
     />
 
-    <ElCard class="flex-1 art-table-card" style="margin-top: 0;padding: 5px;">
+    <ElCard class="flex-1 art-table-card" style="margin-top: 0; padding: 5px">
       <template #header>
         <div class="flex-cb">
           <h4 class="m-0">周期-部门【统计时间：{{ currentMaxTjTime }}】</h4>
@@ -94,9 +94,21 @@
     maxTjTime: string | null
   }
 
-  interface SelectOption { label: string; value: string }
-  interface UseTableParams { current: number; size: number; [key: string]: any }
-  interface UseTableResult<T> { records: T[]; total: number; current: number; size: number }
+  interface SelectOption {
+    label: string
+    value: string
+  }
+  interface UseTableParams {
+    current: number
+    size: number
+    [key: string]: any
+  }
+  interface UseTableResult<T> {
+    records: T[]
+    total: number
+    current: number
+    size: number
+  }
 
   // ==================== 2. 常量 ====================
   const tableHeight = 'calc(100vh - 330px)'
@@ -115,23 +127,44 @@
   const tableApiParams = ref({ ...DEFAULT_PAGINATION, ...searchFormState.value })
 
   const searchItems = computed(() => [
-    { key: 'tjDate', label: '统计时间', type: 'date', props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' } },
-    { key: 'comname', label: '部门', type: 'select', props: { placeholder: '请选择部门', options: comOptions.value, clearable: true } }
+    {
+      key: 'tjDate',
+      label: '统计时间',
+      type: 'date',
+      props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' }
+    },
+    {
+      key: 'comname',
+      label: '部门',
+      type: 'select',
+      props: { placeholder: '请选择部门', options: comOptions.value, clearable: true }
+    }
   ])
 
   // ==================== 5. 构建下拉 ====================
   // ==================== 5. 构建下拉 (全量版) ====================
   // 用独立的全量端点（/list, size: 9999）构建市公司下拉，避免首屏分页只有 20 行时遗漏
   // 后续页中才出现的市公司。返回的集合是全量的，与分页结果无关。
-  const fetchAllForDropdown = async (tjDate: string) => {
+  const fetchAllForDropdown = async () => {
     if (comOptions.value.length) return
     try {
-      const res = await dataReport.axiosRequestZhouqiBm({ current: 1, size: 9999, tjDate, tjDate: tableApiParams.value.tjDate || '', comname: tableApiParams.value.comname ?? '' })
+      const res = await dataReport.axiosRequestZhouqiBm({
+        current: 1,
+        size: 9999,
+        tjDate: tableApiParams.value.tjDate || '',
+        comname: tableApiParams.value.comname ?? ''
+      })
       if (Array.isArray(res) && res.length) {
         const set = new Set<string>()
-        res.forEach((item) => { if (item.comname) set.add(item.comname) })
+        res.forEach((item) => {
+          if (item.comname) set.add(item.comname)
+        })
         comOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
-        ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司`, type: 'success' })
+        ElNotification({
+          title: '提示',
+          message: `已加载：${comOptions.value.length} 个市公司`,
+          type: 'success'
+        })
       }
     } catch {
       /* ignore */
@@ -141,17 +174,34 @@
   const buildDeptOptions = (data: ZhouqiBmData[]) => {
     if (comOptions.value.length) return
     const comSet = new Set<string>()
-    data.forEach((item) => { if (item.comname) comSet.add(item.comname) })
+    data.forEach((item) => {
+      if (item.comname) comSet.add(item.comname)
+    })
     comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-    ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个部门`, type: 'success' })
+    ElNotification({
+      title: '提示',
+      message: `已加载：${comOptions.value.length} 个部门`,
+      type: 'success'
+    })
   }
 
   // ==================== 6. 表格 Hook ====================
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
+  const {
+    data: tableData,
+    loading,
+    error: tableError,
+    pagination,
+    fetchData,
+    refreshData,
+    handleSizeChange,
+    columns,
+    columnChecks
+  } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<ZhouqiBmData>> => {
         const queryParams = {
-          current: params.current, size: params.size,
+          current: params.current,
+          size: params.size,
           tjDate: tableApiParams.value.tjDate || '',
           comname: tableApiParams.value.comname ?? ''
         }
@@ -161,21 +211,30 @@
         const records = page.records || []
         if (records.length) {
           if (!isInitialized) {
-            fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || '')
+            fetchAllForDropdown()
             isInitialized = true
           }
           currentMaxTjTime.value = records[0].maxTjTime || ''
           if (!searchFormState.value.tjDate && records[0].maxTjTime) {
             searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10)
           }
-        } else { currentMaxTjTime.value = '' }
+        } else {
+          currentMaxTjTime.value = ''
+        }
         return { records, total: page.total ?? 0, current: params.current, size: params.size }
       },
       apiParams: tableApiParams.value,
       immediate: true,
       columnsFactory: () => [
         { prop: 'comcode', label: '部门代码', width: 110, align: 'center', sortable: true },
-        { prop: 'comname', label: '部门名称', minWidth: 220, align: 'center', fixed: 'left', sortable: true },
+        {
+          prop: 'comname',
+          label: '部门名称',
+          minWidth: 220,
+          align: 'center',
+          fixed: 'left',
+          sortable: true
+        },
         { prop: 'zhouqiZt', label: '周期整体', width: 110, align: 'center', sortable: true },
         { prop: 'zhouqiWyn', label: '万元内案件周期', width: 140, align: 'center', sortable: true },
         { prop: 'zhouqiWys', label: '万元上案件周期', width: 140, align: 'center', sortable: true },
@@ -185,7 +244,12 @@
         { prop: 'zhifuZt', label: '支付周期', width: 110, align: 'center', sortable: true }
       ]
     },
-    performance: { enableCache: true, cacheTime: 5 * 60 * 1000, debounceTime: 300, maxCacheSize: 100 }
+    performance: {
+      enableCache: true,
+      cacheTime: 5 * 60 * 1000,
+      debounceTime: 300,
+      maxCacheSize: 100
+    }
   })
 
   const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
@@ -203,7 +267,9 @@
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
       await fetchData()
-    } catch { await fetchData() }
+    } catch {
+      await fetchData()
+    }
   }
 
   const handleSearch = async () => {
@@ -211,7 +277,9 @@
       await searchBarRef.value?.validate()
       tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }
       refreshData()
-    } catch { /* validation failed */ }
+    } catch {
+      /* validation failed */
+    }
   }
 
   const handleReset = () => {
@@ -222,16 +290,26 @@
 
   // ==================== 8. 导出 ====================
   const exportColumns = (item: ZhouqiBmData, index: number) => ({
-    序号: index + 1, 部门代码: item.comcode, 部门名称: item.comname,
-    周期整体: item.zhouqiZt, 万元内案件周期: item.zhouqiWyn, 万元上案件周期: item.zhouqiWys,
-    查勘周期: item.chakanZt, 催定周期: item.cuidingZt, 定损周期: item.dingsunZt, 支付周期: item.zhifuZt
+    序号: index + 1,
+    部门代码: item.comcode,
+    部门名称: item.comname,
+    周期整体: item.zhouqiZt,
+    万元内案件周期: item.zhouqiWyn,
+    万元上案件周期: item.zhouqiWys,
+    查勘周期: item.chakanZt,
+    催定周期: item.cuidingZt,
+    定损周期: item.dingsunZt,
+    支付周期: item.zhifuZt
   })
 
   const dateSuffix = () => new Date().toLocaleDateString().replace(/\//g, '-')
 
   const handleExportCurrent = () => {
     const data = tableData.value as ZhouqiBmData[]
-    if (!data.length) { ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' }); return }
+    if (!data.length) {
+      ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' })
+      return
+    }
     const exportData = data.map(exportColumns)
     const ws = XLSX.utils.json_to_sheet(exportData)
     const wb = XLSX.utils.book_new()
@@ -244,21 +322,36 @@
     try {
       const res = await dataReport.axiosRequestZhouqiBm(tableApiParams.value)
       const data = (Array.isArray(res) ? res : []) as ZhouqiBmData[]
-      if (!data.length) { ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' }); return }
+      if (!data.length) {
+        ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' })
+        return
+      }
       const exportData = data.map(exportColumns)
       const ws = XLSX.utils.json_to_sheet(exportData)
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, '周期-部门')
       XLSX.writeFile(wb, `周期-部门_全部_${dateSuffix()}.xlsx`)
       ElNotification({ title: '成功', message: `${data.length} 条数据导出成功`, type: 'success' })
-    } catch { ElNotification({ title: '错误', message: '导出失败', type: 'error' }) }
+    } catch {
+      ElNotification({ title: '错误', message: '导出失败', type: 'error' })
+    }
   }
 </script>
 
 <style scoped>
   /* 搜索栏表单项：文字标签与选择框在所属列中垂直居中 */
-  :deep(.art-search-bar .el-form-item) { align-items: center; margin-bottom: 0; }
-  .custom-header:hover { color: var(--el-color-primary-light-3); padding: 12px 12px 12px; }
-  .demo-group .config-toggles .el-switch { --el-switch-on-color: var(--el-color-primary); }
-  .demo-group .performance-info .el-alert { --el-alert-padding: 12px; }
+  :deep(.art-search-bar .el-form-item) {
+    align-items: center;
+    margin-bottom: 0;
+  }
+  .custom-header:hover {
+    color: var(--el-color-primary-light-3);
+    padding: 12px 12px 12px;
+  }
+  .demo-group .config-toggles .el-switch {
+    --el-switch-on-color: var(--el-color-primary);
+  }
+  .demo-group .performance-info .el-alert {
+    --el-alert-padding: 12px;
+  }
 </style>

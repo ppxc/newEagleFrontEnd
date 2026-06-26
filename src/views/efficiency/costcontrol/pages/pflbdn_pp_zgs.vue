@@ -71,7 +71,7 @@
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
-import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { policyYearLossRate } from '../../api'
   defineOptions({ name: 'PflbdnPpZgsTable' })
@@ -320,7 +320,10 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
       await searchBarRef.value?.validate()
       tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }
       refreshData()
-    } catch {}
+    } catch {
+      ElNotification({ title: '提示', message: '查询参数错误，请检查后重试', type: 'warning' })
+      return
+    }
   }
   const handleReset = () => {
     Object.assign(searchFormState.value, DEFAULT_FORM)

@@ -16,7 +16,7 @@
     />
 
     <!-- 表格卡片容器 -->
-    <ElCard class="flex-1 art-table-card" style="margin-top: 0;padding: 5px;">
+    <ElCard class="flex-1 art-table-card" style="margin-top: 0; padding: 5px">
       <template #header>
         <div class="flex-cb">
           <!-- 表格标题 + 动态统计时间 -->
@@ -127,15 +127,14 @@
 </template>
 
 <script setup lang="ts">
-
   import { ref, computed, onMounted, nextTick } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
-import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dailyWorkload } from '../../api'
-  const VITE_API_PROXY_PORT_URL = import.meta.env.VITE_API_PROXY_PORT_URL
+
 
   // 组件名称（用于 devtools 调试）
   defineOptions({ name: 'GzlBmTable' })
@@ -230,7 +229,9 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
 
   // ==================== 4. 表格样式与高度 ====================
   const tableConfig = ref({ height: '100%', fixedHeight: false })
-  const computedTableHeight = computed(() => (tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'))
+  const computedTableHeight = computed(() =>
+    tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'
+  )
 
   // ==================== 5. 构建部门下拉 ====================
   const buildDeptOptions = (data: DailyWorkloadBmData[]) => {
@@ -366,7 +367,9 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
       await fetchData()
-    } catch { await fetchData() }
+    } catch {
+      await fetchData()
+    }
   }
 
   const handleSearch = async () => {

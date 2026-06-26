@@ -11,7 +11,6 @@
       :show-reset-button="true"
       :show-search-button="true"
       :disabled-search-button="false"
-
       @search="handleSearch"
       @reset="handleReset"
     />
@@ -115,7 +114,7 @@
   import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dailyWorkload } from '../../api'
-  const VITE_API_PROXY_PORT_URL = import.meta.env.VITE_API_PROXY_PORT_URL
+
   // 组件名称
   defineOptions({ name: 'GzlRsTable' })
 
@@ -164,7 +163,6 @@
     endDate: [{ required: false, message: '请选择结束日期', trigger: 'change' }]
   }
 
-
   const searchFormState = ref({
     startDate: '',
     endDate: '',
@@ -200,7 +198,9 @@
 
   // ==================== 4. 表格样式 ====================
   const tableConfig = ref({ height: '100%', fixedHeight: false })
-  const computedTableHeight = computed(() => (tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'))
+  const computedTableHeight = computed(() =>
+    tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'
+  )
 
   // ==================== 5. 构建部门下拉框 ====================
   const buildDeptOptions = (data: DailyWorkloadRsData[]) => {
@@ -330,7 +330,9 @@
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
       await fetchData()
-    } catch { await fetchData() }
+    } catch {
+      await fetchData()
+    }
   }
 
   const handleSearch = async () => {
@@ -425,7 +427,10 @@
 
 <style scoped>
   /* 搜索栏表单项：文字标签与选择框在所属列中垂直居中 */
-  :deep(.art-search-bar .el-form-item) { align-items: center; margin-bottom: 0; }
+  :deep(.art-search-bar .el-form-item) {
+    align-items: center;
+    margin-bottom: 0;
+  }
 
   .custom-header:hover {
     color: var(--el-color-primary-light-3);

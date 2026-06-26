@@ -217,7 +217,7 @@
         const records = page.records || []
         if (records.length) {
           if (!isInitialized) {
-            fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || '')
+            fetchAllForDropdown()
             isInitialized = true
           }
           currentMaxTjTime.value = records[0].maxTjTime || ''
@@ -306,7 +306,9 @@
       await searchBarRef.value?.validate()
       tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }
       refreshData()
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }
   const handleReset = () => {
     Object.assign(searchFormState.value, DEFAULT_FORM)
@@ -318,21 +320,21 @@
     '市公司（定损地）': item.comnameSgs,
     处理部门: item.comname,
     定损台数: item.ajsBn,
-    同比: item.ajsTb,
+    '定损台数-同比': item.ajsTb,
     '定损金额（万元）': item.dsjeBn,
-    同比: item.dsjeTb,
+    '定损金额-同比': item.dsjeTb,
     '车均定损（整体）': item.cjBn,
-    同比: item.cjTb,
+    '车均定损-同比': item.cjTb,
     '车均定损（2万内）': item.lwnCjBn,
-    同比: item.lwnCjTb,
+    '车均定损-同比-2万内': item.lwnCjTb,
     '车均定损（2万以上）': item.lwysCjBn,
-    同比: item.lwysCjTb,
+    '车均定损-同比-2万以上': item.lwysCjTb,
     '车均换件（元）': item.hjcjBn,
-    同比: item.hjcjTb,
+    '车均换件-同比': item.hjcjTb,
     '车均工时（元）': item.gscjBn,
-    同比: item.gscjTb,
+    '车均工时-同比': item.gscjTb,
     换修比: item.hxb,
-    同比: item.hxbTb
+    '换修比-同比': item.hxbTb
   })
   const dateSuffix = () => new Date().toLocaleDateString().replace(/\//g, '-')
   const handleExportCurrent = () => {

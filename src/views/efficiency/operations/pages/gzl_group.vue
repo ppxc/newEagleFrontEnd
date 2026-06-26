@@ -136,9 +136,9 @@
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dailyWorkload } from '../../api'
-  const VITE_API_PROXY_PORT_URL = import.meta.env.VITE_API_PROXY_PORT_URL
 
   // 组件名称（用于 devtools 调试）
   defineOptions({ name: 'GzlGroupTable' })
@@ -213,7 +213,6 @@
     endDate: [{ required: false, message: '请选择结束日期', trigger: 'change' }]
   }
 
-
   const searchFormState = ref({
     startDate: '',
     endDate: '',
@@ -261,7 +260,9 @@
 
   // ==================== 4. 表格样式与高度 ====================
   const tableConfig = ref({ height: '100%', fixedHeight: false })
-  const computedTableHeight = computed(() => (tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'))
+  const computedTableHeight = computed(() =>
+    tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'
+  )
 
   // ==================== 5. 工具函数 ====================
   const sortGroupByCode = (groups: GroupOption[]) => {
@@ -395,7 +396,14 @@
           fixed: 'left',
           sortable: true
         },
-        { prop: 'groups', label: '小组', width: 150, align: 'center', sortable: true, fixed: 'left' },
+        {
+          prop: 'groups',
+          label: '小组',
+          width: 150,
+          align: 'center',
+          sortable: true,
+          fixed: 'left'
+        },
         { prop: 'groupsCode', label: '小组编码', width: 140, align: 'center', sortable: true },
         { prop: 'ckJsl', label: '查勘件数量', width: 120, align: 'center', sortable: true },
         {
@@ -424,6 +432,8 @@
     }
   })
 
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
+
   // ==================== 8. 表格事件 ====================
   const tableRef = ref<any>(null)
   const handleSelectionChange = () => {}
@@ -448,7 +458,9 @@
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
       await fetchData()
-    } catch { await fetchData() }
+    } catch {
+      await fetchData()
+    }
   }
 
   const handleSearch = async () => {
@@ -561,7 +573,10 @@
 
 <style scoped>
   /* 搜索栏表单项：文字标签与选择框在所属列中垂直居中 */
-  :deep(.art-search-bar .el-form-item) { align-items: center; margin-bottom: 0; }
+  :deep(.art-search-bar .el-form-item) {
+    align-items: center;
+    margin-bottom: 0;
+  }
 
   .custom-header:hover {
     color: var(--el-color-primary-light-3);

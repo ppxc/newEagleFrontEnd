@@ -228,7 +228,7 @@
         const records = page.records || []
         if (records.length) {
           if (!isInitialized) {
-            fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || '')
+            fetchAllForDropdown()
             isInitialized = true
           }
           currentMaxTjTime.value = records[0].maxTjTime || ''

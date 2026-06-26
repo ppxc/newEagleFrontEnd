@@ -14,7 +14,7 @@
       @reset="handleReset"
     />
 
-    <ElCard class="flex-1 art-table-card" style="margin-top: 0;padding: 5px;">
+    <ElCard class="flex-1 art-table-card" style="margin-top: 0; padding: 5px">
       <template #header>
         <div class="flex-cb">
           <h4 class="m-0">车险结案率(人员)【统计时间：{{ currentMaxTjTime }}】</h4>
@@ -73,7 +73,7 @@
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
-import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
 
@@ -96,11 +96,27 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
     maxTjTime: string | null
   }
 
-  interface SelectOption { label: string; value: string }
-  interface GroupOption extends SelectOption { groupsCode: string | number }
-  interface DeptGroupMap { [deptName: string]: GroupOption[] }
-  interface UseTableParams { current: number; size: number; [key: string]: any }
-  interface UseTableResult<T> { records: T[]; total: number; current: number; size: number }
+  interface SelectOption {
+    label: string
+    value: string
+  }
+  interface GroupOption extends SelectOption {
+    groupsCode: string | number
+  }
+  interface DeptGroupMap {
+    [deptName: string]: GroupOption[]
+  }
+  interface UseTableParams {
+    current: number
+    size: number
+    [key: string]: any
+  }
+  interface UseTableResult<T> {
+    records: T[]
+    total: number
+    current: number
+    size: number
+  }
 
   // ==================== 2. 工具函数 ====================
   const formatPercent = (val: any): string => {
@@ -129,9 +145,29 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   const tableApiParams = ref({ ...DEFAULT_PAGINATION, ...searchFormState.value })
 
   const searchItems = computed(() => [
-    { key: 'tjDate', label: '统计时间', type: 'date', props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' } },
-    { key: 'bm', label: '部门', type: 'select', props: { placeholder: '请选择部门', options: comOptions.value, clearable: true } },
-    { key: 'groups', label: '小组', type: 'select', props: { placeholder: '请选择小组', options: groupOptions.value, clearable: true, disabled: !searchFormState.value.bm } },
+    {
+      key: 'tjDate',
+      label: '统计时间',
+      type: 'date',
+      props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' }
+    },
+    {
+      key: 'bm',
+      label: '部门',
+      type: 'select',
+      props: { placeholder: '请选择部门', options: comOptions.value, clearable: true }
+    },
+    {
+      key: 'groups',
+      label: '小组',
+      type: 'select',
+      props: {
+        placeholder: '请选择小组',
+        options: groupOptions.value,
+        clearable: true,
+        disabled: !searchFormState.value.bm
+      }
+    },
     { key: 'username', label: '人员', type: 'input', props: { placeholder: '请输入人员名称' } }
   ])
 
@@ -149,7 +185,12 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   const fetchAllForDropdown = async (tjDate: string) => {
     if (Object.keys(deptGroupMap.value).length) return
     try {
-      const res = await dataReport.axiosRequestPacllRy({ current: 1, size: 9999, tjDate, comname: '' })
+      const res = await dataReport.axiosRequestPacllRy({
+        current: 1,
+        size: 9999,
+        tjDate,
+        comname: ''
+      })
       if (Array.isArray(res) && res.length) {
         const comSet = new Set<string>()
         const tempDeptGroupMap: DeptGroupMap = {}
@@ -162,62 +203,106 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
             if (!tempDeptGroupMap[item.bm]) tempDeptGroupMap[item.bm] = []
             const exists = tempDeptGroupMap[item.bm].some((g) => g.value === item.groups)
             if (!exists) {
-              tempDeptGroupMap[item.bm].push({ label: item.groups, value: item.groups, groupsCode: item.usercode || '' })
-              if (!seenGroups.has(item.groups)) { seenGroups.add(item.groups); groupCount++ }
+              tempDeptGroupMap[item.bm].push({
+                label: item.groups,
+                value: item.groups,
+                groupsCode: item.usercode || ''
+              })
+              if (!seenGroups.has(item.groups)) {
+                seenGroups.add(item.groups)
+                groupCount++
+              }
             }
           }
         })
         comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-        Object.keys(tempDeptGroupMap).forEach((dept) => { tempDeptGroupMap[dept] = sortGroupByCode(tempDeptGroupMap[dept]) })
+        Object.keys(tempDeptGroupMap).forEach((dept) => {
+          tempDeptGroupMap[dept] = sortGroupByCode(tempDeptGroupMap[dept])
+        })
         deptGroupMap.value = tempDeptGroupMap
-        ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个部门，共 ${groupCount} 个小组`, type: 'success' })
+        ElNotification({
+          title: '提示',
+          message: `已加载：${comOptions.value.length} 个部门，共 ${groupCount} 个小组`,
+          type: 'success'
+        })
       }
     } catch {
       /* ignore */
     }
   }
 
-  const buildDeptGroupMap = (data: PacllRyData[]) => {
-    if (Object.keys(deptGroupMap.value).length) return
-    const comSet = new Set<string>()
-    const tempDeptGroupMap: DeptGroupMap = {}
-    const seenGroups = new Set<string>()
-    let groupCount = 0
+  // const buildDeptGroupMap = (data: PacllRyData[]) => {
+  //   if (Object.keys(deptGroupMap.value).length) return
+  //   const comSet = new Set<string>()
+  //   const tempDeptGroupMap: DeptGroupMap = {}
+  //   const seenGroups = new Set<string>()
+  //   let groupCount = 0
 
-    data.forEach((item) => {
-      if (!item.bm) return
-      comSet.add(item.bm)
-      if (item.groups) {
-        if (!tempDeptGroupMap[item.bm]) tempDeptGroupMap[item.bm] = []
-        const exists = tempDeptGroupMap[item.bm].some((g) => g.value === item.groups)
-        if (!exists) {
-          tempDeptGroupMap[item.bm].push({ label: item.groups, value: item.groups, groupsCode: item.usercode || '' })
-          if (!seenGroups.has(item.groups)) { seenGroups.add(item.groups); groupCount++ }
-        }
-      }
-    })
+  //   data.forEach((item) => {
+  //     if (!item.bm) return
+  //     comSet.add(item.bm)
+  //     if (item.groups) {
+  //       if (!tempDeptGroupMap[item.bm]) tempDeptGroupMap[item.bm] = []
+  //       const exists = tempDeptGroupMap[item.bm].some((g) => g.value === item.groups)
+  //       if (!exists) {
+  //         tempDeptGroupMap[item.bm].push({
+  //           label: item.groups,
+  //           value: item.groups,
+  //           groupsCode: item.usercode || ''
+  //         })
+  //         if (!seenGroups.has(item.groups)) {
+  //           seenGroups.add(item.groups)
+  //           groupCount++
+  //         }
+  //       }
+  //     }
+  //   })
 
-    comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-    Object.keys(tempDeptGroupMap).forEach((dept) => { tempDeptGroupMap[dept] = sortGroupByCode(tempDeptGroupMap[dept]) })
-    deptGroupMap.value = tempDeptGroupMap
-    ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个部门，共 ${groupCount} 个小组`, type: 'success' })
-  }
+  //   comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
+  //   Object.keys(tempDeptGroupMap).forEach((dept) => {
+  //     tempDeptGroupMap[dept] = sortGroupByCode(tempDeptGroupMap[dept])
+  //   })
+  //   deptGroupMap.value = tempDeptGroupMap
+  //   ElNotification({
+  //     title: '提示',
+  //     message: `已加载：${comOptions.value.length} 个部门，共 ${groupCount} 个小组`,
+  //     type: 'success'
+  //   })
+  // }
 
   // ==================== 7. 级联监听 ====================
-  watch(() => searchFormState.value.bm, (newDept) => {
-    if (newDept) {
-      const sortedGroups = deptGroupMap.value[newDept] || []
-      groupOptions.value = sortedGroups.map((g) => ({ label: g.label, value: g.value }))
-      searchFormState.value.groups = ''
-    } else { groupOptions.value = []; searchFormState.value.groups = '' }
-  }, { immediate: true })
+  watch(
+    () => searchFormState.value.bm,
+    (newDept) => {
+      if (newDept) {
+        const sortedGroups = deptGroupMap.value[newDept] || []
+        groupOptions.value = sortedGroups.map((g) => ({ label: g.label, value: g.value }))
+        searchFormState.value.groups = ''
+      } else {
+        groupOptions.value = []
+        searchFormState.value.groups = ''
+      }
+    },
+    { immediate: true }
+  )
 
   // ==================== 8. 表格 Hook ====================
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
+  const {
+    data: tableData,
+    loading,
+    error: tableError,
+    pagination,
+    fetchData,
+    refreshData,
+    handleSizeChange,
+    columns,
+    columnChecks
+  } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<PacllRyData>> => {
         const queryParams = {
-          current: params.current, size: params.size,
+          current: params.current,
+          size: params.size,
           tjDate: tableApiParams.value.tjDate || '',
           bm: tableApiParams.value.bm ?? '',
           groups: tableApiParams.value.groups ?? '',
@@ -236,13 +321,22 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
           if (!searchFormState.value.tjDate && records[0].maxTjTime) {
             searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10)
           }
-        } else { currentMaxTjTime.value = '' }
+        } else {
+          currentMaxTjTime.value = ''
+        }
         return { records, total: page.total ?? 0, current: params.current, size: params.size }
       },
       apiParams: tableApiParams.value,
       immediate: true,
       columnsFactory: () => [
-        { prop: 'bm', label: '部门', minWidth: 180, align: 'center', fixed: 'left', sortable: true },
+        {
+          prop: 'bm',
+          label: '部门',
+          minWidth: 180,
+          align: 'center',
+          fixed: 'left',
+          sortable: true
+        },
         { prop: 'username', label: '人员', width: 100, align: 'center', fixed: 'left' },
         { prop: 'usercode', label: '工号', width: 120, align: 'center', sortable: true },
         { prop: 'groups', label: '小组', width: 120, align: 'center', sortable: true },
@@ -251,10 +345,22 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
         { prop: 'wjajl', label: '未决案件量', width: 120, align: 'center', sortable: true },
         { prop: 'pacll', label: '赔案处理率', width: 110, align: 'center', sortable: true },
         { prop: 'bsrswjcl', label: '不涉人伤未决量', width: 150, align: 'center', sortable: true },
-        { prop: 'lajal', label: '立案结案率', width: 110, align: 'center', sortable: true, formatter: (row: any) => formatPercent(row.lajal) }
+        {
+          prop: 'lajal',
+          label: '立案结案率',
+          width: 110,
+          align: 'center',
+          sortable: true,
+          formatter: (row: any) => formatPercent(row.lajal)
+        }
       ]
     },
-    performance: { enableCache: true, cacheTime: 5 * 60 * 1000, debounceTime: 300, maxCacheSize: 100 }
+    performance: {
+      enableCache: true,
+      cacheTime: 5 * 60 * 1000,
+      debounceTime: 300,
+      maxCacheSize: 100
+    }
   })
 
   const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
@@ -270,14 +376,23 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
     comOptions.value = []
     isInitialized = false
     try {
-      const res = await dataReport.axiosRequestPacllRy({ current: 1, size: 9999, tjDate: tableApiParams.value.tjDate, comname: '' })
+      const res = await dataReport.axiosRequestPacllRy({
+        current: 1,
+        size: 9999,
+        tjDate: tableApiParams.value.tjDate,
+        comname: ''
+      })
       if (Array.isArray(res) && res.length) {
         currentMaxTjTime.value = res[0].maxTjTime || ''
-        await fetchAllForDropdown(tableApiParams.value.tjDate || res[0].maxTjTime?.substring(0, 10) || '')
+        await fetchAllForDropdown(
+          tableApiParams.value.tjDate || res[0].maxTjTime?.substring(0, 10) || ''
+        )
         isInitialized = true
       }
       await fetchData()
-    } catch { await fetchData() }
+    } catch {
+      await fetchData()
+    }
   }
 
   const handleSearch = async () => {
@@ -285,7 +400,9 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
       await searchBarRef.value?.validate()
       tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }
       refreshData()
-    } catch { /* validation failed */ }
+    } catch {
+      /* validation failed */
+    }
   }
 
   const handleReset = () => {
@@ -296,17 +413,27 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
 
   // ==================== 10. 导出 ====================
   const exportColumns = (item: PacllRyData, index: number) => ({
-    序号: index + 1, 部门: item.bm, 人员: item.username, 工号: item.usercode,
+    序号: index + 1,
+    部门: item.bm,
+    人员: item.username,
+    工号: item.usercode,
     小组: item.groups,
-    新增案件量: item.xzajl, 已决案件量: item.yjajl, 未决案件量: item.wjajl,
-    赔案处理率: item.pacll, 不涉人伤未决量: item.bsrswjcl, 立案结案率: item.lajal
+    新增案件量: item.xzajl,
+    已决案件量: item.yjajl,
+    未决案件量: item.wjajl,
+    赔案处理率: item.pacll,
+    不涉人伤未决量: item.bsrswjcl,
+    立案结案率: item.lajal
   })
 
   const dateSuffix = () => new Date().toLocaleDateString().replace(/\//g, '-')
 
   const handleExportCurrent = () => {
     const data = tableData.value as PacllRyData[]
-    if (!data.length) { ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' }); return }
+    if (!data.length) {
+      ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' })
+      return
+    }
     const exportData = data.map(exportColumns)
     const ws = XLSX.utils.json_to_sheet(exportData)
     const wb = XLSX.utils.book_new()
@@ -319,21 +446,36 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
     try {
       const res = await dataReport.axiosRequestPacllRy(tableApiParams.value)
       const data = (Array.isArray(res) ? res : []) as PacllRyData[]
-      if (!data.length) { ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' }); return }
+      if (!data.length) {
+        ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' })
+        return
+      }
       const exportData = data.map(exportColumns)
       const ws = XLSX.utils.json_to_sheet(exportData)
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, '车险结案率(人员)')
       XLSX.writeFile(wb, `车险结案率(人员)_全部_${dateSuffix()}.xlsx`)
       ElNotification({ title: '成功', message: `${data.length} 条数据导出成功`, type: 'success' })
-    } catch { ElNotification({ title: '错误', message: '导出失败', type: 'error' }) }
+    } catch {
+      ElNotification({ title: '错误', message: '导出失败', type: 'error' })
+    }
   }
 </script>
 
 <style scoped>
   /* 搜索栏表单项：文字标签与选择框在所属列中垂直居中 */
-  :deep(.art-search-bar .el-form-item) { align-items: center; margin-bottom: 0; }
-  .custom-header:hover { color: var(--el-color-primary-light-3); padding: 12px 12px 12px; }
-  .demo-group .config-toggles .el-switch { --el-switch-on-color: var(--el-color-primary); }
-  .demo-group .performance-info .el-alert { --el-alert-padding: 12px; }
+  :deep(.art-search-bar .el-form-item) {
+    align-items: center;
+    margin-bottom: 0;
+  }
+  .custom-header:hover {
+    color: var(--el-color-primary-light-3);
+    padding: 12px 12px 12px;
+  }
+  .demo-group .config-toggles .el-switch {
+    --el-switch-on-color: var(--el-color-primary);
+  }
+  .demo-group .performance-info .el-alert {
+    --el-alert-padding: 12px;
+  }
 </style>

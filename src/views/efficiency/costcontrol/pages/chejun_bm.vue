@@ -33,9 +33,7 @@
         <template #left>
           <ElSpace wrap>
             <ElDropdown split-button type="primary" @click="handleExportCurrent" v-ripple>
-              <ElIcon>
-                <Download /> </ElIcon
-              >导出当前页
+              <ElIcon> <Download /> </ElIcon>导出当前页
               <template #dropdown>
                 <ElDropdownMenu>
                   <ElDropdownItem @click="handleExportAll">导出全部</ElDropdownItem>
@@ -198,7 +196,7 @@
         const records = page.records || []
         if (records.length) {
           if (!isInitialized) {
-            fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || '')
+            fetchAllForDropdown()
             isInitialized = true
           }
           currentMaxTjTime.value = records[0].maxTjTime || ''
@@ -278,7 +276,9 @@
       await searchBarRef.value?.validate()
       tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }
       refreshData()
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }
   const handleReset = () => {
     Object.assign(searchFormState.value, DEFAULT_FORM)

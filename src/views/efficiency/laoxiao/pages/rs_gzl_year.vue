@@ -51,7 +51,8 @@
       <ArtTable
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="tableHeight"
         :scrollbar-always-on="true"
@@ -73,7 +74,7 @@
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
   import { useLaoxiaoTable } from '../../api/useLaoxiaoTable'
-
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   defineOptions({ name: 'RsGzlYearTable' })
 
   interface RsGzlYearData {
@@ -86,10 +87,18 @@
     tjYear: string | null
     jaflag: string | null
     hj: number | null
-    mon1: number | null; mon2: number | null; mon3: number | null
-    mon4: number | null; mon5: number | null; mon6: number | null
-    mon7: number | null; mon8: number | null; mon9: number | null
-    mon10: number | null; mon11: number | null; mon12: number | null
+    mon1: number | null
+    mon2: number | null
+    mon3: number | null
+    mon4: number | null
+    mon5: number | null
+    mon6: number | null
+    mon7: number | null
+    mon8: number | null
+    mon9: number | null
+    mon10: number | null
+    mon11: number | null
+    mon12: number | null
     maxTjTime: string | null
   }
 
@@ -97,17 +106,36 @@
 
   // 人伤跟踪量/调解量：仅 tjDate 筛选，无 comnameSgs 下拉
   const {
-    searchBarRef, searchFormState, searchItems, rules,
-     tableData, loading, tableError, pagination,
-    handleSizeChange, handleCurrentChange, columns, columnChecks,
-    currentMaxTjTime, tableApiParams,
-    handleRefresh, handleSearch, handleReset
+    searchBarRef,
+    searchFormState,
+    searchItems,
+    rules,
+    tableData,
+    loading,
+    tableError,
+    pagination,
+    handleSizeChange,
+    handleCurrentChange,
+    columns,
+    columnChecks,
+    currentMaxTjTime,
+    tableApiParams,
+    handleRefresh,
+    handleSearch,
+    handleReset
   } = useLaoxiaoTable<RsGzlYearData>({
     pageApi: dataReport.axiosRequestRsGzlYearPage,
     listApi: dataReport.axiosRequestRsGzlYear,
     hasComnameSgs: false,
     columnsFactory: () => [
-      { prop: 'comname', label: '地市', width: 130, align: 'center', fixed: 'left', sortable: true },
+      {
+        prop: 'comname',
+        label: '地市',
+        width: 130,
+        align: 'center',
+        fixed: 'left',
+        sortable: true
+      },
       { prop: 'username', label: '人员', width: 100, align: 'center', fixed: 'left' },
       { prop: 'fenzu', label: '分组合计', width: 120, align: 'center', fixed: 'left' },
       { prop: 'hj', label: '汇总', width: 110, align: 'center', sortable: true, fixed: 'right' },
@@ -121,15 +149,26 @@
     ]
   })
 
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
+
   const exportColumns = (item: RsGzlYearData, index: number) => ({
     序号: index + 1,
     地市: item.comname,
     人员: item.username,
     分组合计: item.fenzu,
     汇总: item.hj,
-    '1月': item.mon1, '2月': item.mon2, '3月': item.mon3, '4月': item.mon4,
-    '5月': item.mon5, '6月': item.mon6, '7月': item.mon7, '8月': item.mon8,
-    '9月': item.mon9, '10月': item.mon10, '11月': item.mon11, '12月': item.mon12
+    '1月': item.mon1,
+    '2月': item.mon2,
+    '3月': item.mon3,
+    '4月': item.mon4,
+    '5月': item.mon5,
+    '6月': item.mon6,
+    '7月': item.mon7,
+    '8月': item.mon8,
+    '9月': item.mon9,
+    '10月': item.mon10,
+    '11月': item.mon11,
+    '12月': item.mon12
   })
 
   const dateSuffix = () => new Date().toLocaleDateString().replace(/\//g, '-')

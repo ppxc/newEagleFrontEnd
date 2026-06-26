@@ -16,7 +16,7 @@
     />
 
     <!-- 表格卡片容器 -->
-    <ElCard class="flex-1 art-table-card" style="margin-top: 0;padding: 5px;">
+    <ElCard class="flex-1 art-table-card" style="margin-top: 0; padding: 5px">
       <template #header>
         <div class="flex-cb">
           <!-- 表格标题 + 动态统计时间 -->
@@ -218,14 +218,25 @@
   const fetchAllForDropdown = async (tjDate: string) => {
     if (comnameSgsOptions.value.length) return
     try {
-      const res = await dataReport.axiosRequestWjxs({ current: 1, size: 9999, tjDate, comnameSgs: '' })
+      const res = await dataReport.axiosRequestWjxs({
+        current: 1,
+        size: 9999,
+        tjDate,
+        comnameSgs: ''
+      })
       if (Array.isArray(res) && res.length) {
         const set = new Set<string>()
-        res.forEach((item: WjxsData) => { if (item.comname) set.add(item.comname) })
+        res.forEach((item: WjxsData) => {
+          if (item.comname) set.add(item.comname)
+        })
         comnameSgsOptions.value = Array.from(set)
           .sort()
           .map((v) => ({ label: v, value: v }))
-        ElNotification({ title: '提示', message: `已加载：${comnameSgsOptions.value.length} 个市公司`, type: 'success' })
+        ElNotification({
+          title: '提示',
+          message: `已加载：${comnameSgsOptions.value.length} 个市公司`,
+          type: 'success'
+        })
       }
     } catch {
       /* ignore */
@@ -362,13 +373,16 @@
     isInitialized.value = false
     try {
       const res = await dataReport.axiosRequestWjxs({
-        current: 1, size: 9999,
+        current: 1,
+        size: 9999,
         tjDate: tableApiParams.value.tjDate || '',
         comnameSgs: ''
       })
       if (Array.isArray(res) && res.length) {
         currentMaxTjTime.value = res[0].maxTjTime || ''
-        await fetchAllForDropdown(tableApiParams.value.tjDate || res[0].maxTjTime?.substring(0, 10) || '')
+        await fetchAllForDropdown(
+          tableApiParams.value.tjDate || res[0].maxTjTime?.substring(0, 10) || ''
+        )
         isInitialized.value = true
       }
       await fetchData()
@@ -421,16 +435,17 @@
     const ws = XLSX.utils.json_to_sheet(exportData)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, '未决存量-案件类型')
-    const fileName = `未决存量-案件类型_${new Date()
-      .toLocaleDateString()
-      .replace(/\//g, '-')}.xlsx`
+    const fileName = `未决存量-案件类型_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`
     XLSX.writeFile(wb, fileName)
     ElNotification({ title: '成功', message: '导出成功', type: 'success' })
   }
 
   const handleExportAll = async () => {
     try {
-      const res = await dataReport.axiosRequestWjxs({ tjDate: tableApiParams.value.tjDate || '', comnameSgs: tableApiParams.value.comnameSgs ?? '' })
+      const res = await dataReport.axiosRequestWjxs({
+        tjDate: tableApiParams.value.tjDate || '',
+        comnameSgs: tableApiParams.value.comnameSgs ?? ''
+      })
       const data = (Array.isArray(res) ? res : []) as WjxsData[]
       if (!data.length) {
         ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' })

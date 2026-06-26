@@ -13,12 +13,10 @@
       :disabled-search-button="false"
       @search="handleSearch"
       @reset="handleReset"
-
-
     />
 
     <!-- 表格卡片容器 -->
-    <ElCard class="flex-1 art-table-card my-0" style="margin-top: 0; padding: 0;">
+    <ElCard class="flex-1 art-table-card my-0" style="margin-top: 0; padding: 0">
       <template #header>
         <div class="flex-cb">
           <!-- 表格标题 + 动态统计时间 -->
@@ -38,7 +36,6 @@
         @refresh="handleRefresh"
         layout="refresh,size,fullscreen,columns,settings"
         fullClass="art-table-card"
-
       >
         <template #left>
           <ElSpace wrap>
@@ -148,7 +145,7 @@
   import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dailyWorkload } from '../../api'
-  const VITE_API_PROXY_PORT_URL = import.meta.env.VITE_API_PROXY_PORT_URL
+
   // 组件名称（用于 devtools 调试）
   defineOptions({ name: 'GzlRyTable' })
 
@@ -299,7 +296,9 @@
 
   // ==================== 4. 表格样式与高度 ====================
   const tableConfig = ref({ height: '100%', fixedHeight: false })
-  const computedTableHeight = computed(() => (tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'))  // 修改非固定高度时的计算方式
+  const computedTableHeight = computed(() =>
+    tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'
+  ) // 修改非固定高度时的计算方式
 
   // ==================== 5. 工具函数 ====================
   /**
@@ -506,14 +505,16 @@
       // 记录刷新日志
       // await LogService.tableLog('人员当日工作量', '刷新', tableApiParams.value)
 
-      const res = await dailyWorkload.axiosRequestDailyWorkloadRy(tableApiParams.value)      // axios 返回的已经是数据数组
+      const res = await dailyWorkload.axiosRequestDailyWorkloadRy(tableApiParams.value) // axios 返回的已经是数据数组
       if (Array.isArray(res) && res.length) {
         allOriginData.value = [...res]
         buildDeptGroupMap(allOriginData.value)
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
       await fetchData()
-    } catch { await fetchData() }
+    } catch {
+      await fetchData()
+    }
   }
 
   /**
@@ -644,7 +645,10 @@
 
 <style scoped>
   /* 搜索栏表单项：文字标签与选择框在所属列中垂直居中 */
-  :deep(.art-search-bar .el-form-item) { align-items: center; margin-bottom: 0; }
+  :deep(.art-search-bar .el-form-item) {
+    align-items: center;
+    margin-bottom: 0;
+  }
 
   /* 自定义表头样式 */
   .custom-header:hover {
