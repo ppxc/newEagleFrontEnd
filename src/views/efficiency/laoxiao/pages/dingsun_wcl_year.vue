@@ -51,12 +51,13 @@
       <ArtTable
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="tableHeight"
         :scrollbar-always-on="true"
         empty-height="660px"
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       >
         <template #index="{ $index }">
@@ -73,6 +74,7 @@
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
   import { useLaoxiaoTable } from '../../api/useLaoxiaoTable'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
 
   defineOptions({ name: 'DingsunWclYearTable' })
 
@@ -87,32 +89,73 @@
     usercode: string | null
     tjYear: string | null
     hj: number | null
-    mon1: number | null; mon2: number | null; mon3: number | null
-    mon4: number | null; mon5: number | null; mon6: number | null
-    mon7: number | null; mon8: number | null; mon9: number | null
-    mon10: number | null; mon11: number | null; mon12: number | null
+    mon1: number | null
+    mon2: number | null
+    mon3: number | null
+    mon4: number | null
+    mon5: number | null
+    mon6: number | null
+    mon7: number | null
+    mon8: number | null
+    mon9: number | null
+    mon10: number | null
+    mon11: number | null
+    mon12: number | null
     maxTjTime: string | null
   }
 
   const tableHeight = 'calc(100vh - 330px)'
 
   const {
-    searchBarRef, searchFormState, searchItems, rules,
-    fetchData, tableData, loading, tableError, pagination,
-    handleSizeChange, handleCurrentChange, columns, columnChecks,
-    currentMaxTjTime, tableApiParams,
-    handleRefresh, handleSearch, handleReset
+    searchBarRef,
+    searchFormState,
+    searchItems,
+    rules,
+    tableData,
+    loading,
+    tableError,
+    pagination,
+    handleSizeChange,
+    handleCurrentChange,
+    columns,
+    columnChecks,
+    currentMaxTjTime,
+    tableApiParams,
+    handleRefresh,
+    handleSearch,
+    handleReset
   } = useLaoxiaoTable<DingsunWclYearData>({
     pageApi: dataReport.axiosRequestDingsunWclYearPage,
     listApi: dataReport.axiosRequestDingsunWclYear,
     hasComnameSgs: true,
     columnsFactory: () => [
-      { prop: 'comnameSgs', label: '地市公司', width: 130, align: 'center', fixed: 'left', sortable: true },
-      { prop: 'comname', label: '部门', width: 130, align: 'center', fixed: 'left', sortable: true },
+      {
+        prop: 'comnameSgs',
+        label: '地市公司',
+        width: 130,
+        align: 'center',
+        fixed: 'left',
+        sortable: true
+      },
+      {
+        prop: 'comname',
+        label: '部门',
+        width: 130,
+        align: 'center',
+        fixed: 'left',
+        sortable: true
+      },
       { prop: 'username', label: '人员', width: 100, align: 'center', fixed: 'left' },
       { prop: 'usercode', label: '工号', width: 110, align: 'center' },
       { prop: 'tjYear', label: '统计年', width: 90, align: 'center' },
-      { prop: 'hj', label: '年度合计', width: 110, align: 'center', sortable: true, fixed: 'right' },
+      {
+        prop: 'hj',
+        label: '年度合计',
+        width: 110,
+        align: 'center',
+        sortable: true,
+        fixed: 'right'
+      },
       ...Array.from({ length: 12 }, (_, i) => ({
         prop: `mon${i + 1}`,
         label: `${i + 1}月`,
@@ -123,10 +166,6 @@
     ]
   })
 
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
-  }
-
   const exportColumns = (item: DingsunWclYearData, index: number) => ({
     序号: index + 1,
     统计日期: item.tjdate,
@@ -136,11 +175,21 @@
     工号: item.usercode,
     统计年: item.tjYear,
     年度合计: item.hj,
-    '1月': item.mon1, '2月': item.mon2, '3月': item.mon3, '4月': item.mon4,
-    '5月': item.mon5, '6月': item.mon6, '7月': item.mon7, '8月': item.mon8,
-    '9月': item.mon9, '10月': item.mon10, '11月': item.mon11, '12月': item.mon12
+    '1月': item.mon1,
+    '2月': item.mon2,
+    '3月': item.mon3,
+    '4月': item.mon4,
+    '5月': item.mon5,
+    '6月': item.mon6,
+    '7月': item.mon7,
+    '8月': item.mon8,
+    '9月': item.mon9,
+    '10月': item.mon10,
+    '11月': item.mon11,
+    '12月': item.mon12
   })
 
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
   const dateSuffix = () => new Date().toLocaleDateString().replace(/\//g, '-')
   const SHEET_NAME = '定损完成量-年度每月'
 

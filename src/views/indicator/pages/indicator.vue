@@ -130,7 +130,7 @@ const damageAssessment = reactive({
 const EndedPercentage = reactive({
   currentValue: 95,
   previousValue: 93,
-  data: [38888, 2666]//已决数，未决数
+  data: [38888, 2666] as [number, number] //已决数，未决数
 })
 // const currentReportNum = reactive({
 //   today: ref(0),

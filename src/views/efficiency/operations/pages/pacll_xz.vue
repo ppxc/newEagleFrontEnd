@@ -51,13 +51,13 @@
       <ArtTable
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="tableHeight"
         :scrollbar-always-on="true"
         empty-height="660px"
-        merge-first-column
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <template #index="{ $index }">
@@ -72,7 +72,8 @@
   import { ref, computed, watch } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
 
@@ -169,7 +170,7 @@
     }
   ])
 
-  // ==================== 6. 构建下拉 ====================
+  // ==================== 6. 构建下拉 (全量版) ====================
   const sortGroupByCode = (groups: GroupOption[]) => {
     return groups.sort((a, b) => {
       const codeA = typeof a.groupsCode === 'string' ? parseInt(a.groupsCode) || 0 : a.groupsCode
@@ -178,44 +179,95 @@
     })
   }
 
-  const buildDeptGroupMap = (data: PacllXzData[]) => {
+  // 用独立的全量端点（/list, size: 9999）构建部门+小组级联下拉，
+  // 避免首屏分页只有 20 行时遗漏后续页中的部门/小组组合。
+  const fetchAllForDropdown = async (tjDate: string) => {
     if (Object.keys(deptGroupMap.value).length) return
-    const comSet = new Set<string>()
-    const tempDeptGroupMap: DeptGroupMap = {}
-    const seenGroups = new Set<string>()
-    let groupCount = 0
-
-    data.forEach((item) => {
-      if (!item.comname) return
-      comSet.add(item.comname)
-      if (item.groups && item.groupscode) {
-        if (!tempDeptGroupMap[item.comname]) tempDeptGroupMap[item.comname] = []
-        const exists = tempDeptGroupMap[item.comname].some((g) => g.value === item.groups)
-        if (!exists) {
-          tempDeptGroupMap[item.comname].push({
-            label: item.groups,
-            value: item.groups,
-            groupsCode: item.groupscode
-          })
-          if (!seenGroups.has(item.groups)) {
-            seenGroups.add(item.groups)
-            groupCount++
+    try {
+      const res = await dataReport.axiosRequestPacllXz({
+        current: 1,
+        size: 9999,
+        tjDate,
+        comname: ''
+      })
+      if (Array.isArray(res) && res.length) {
+        const comSet = new Set<string>()
+        const tempDeptGroupMap: DeptGroupMap = {}
+        const seenGroups = new Set<string>()
+        let groupCount = 0
+        res.forEach((item: PacllXzData) => {
+          if (!item.comname) return
+          comSet.add(item.comname)
+          if (item.groups && item.groupscode) {
+            if (!tempDeptGroupMap[item.comname]) tempDeptGroupMap[item.comname] = []
+            const exists = tempDeptGroupMap[item.comname].some((g) => g.value === item.groups)
+            if (!exists) {
+              tempDeptGroupMap[item.comname].push({
+                label: item.groups,
+                value: item.groups,
+                groupsCode: item.groupscode
+              })
+              if (!seenGroups.has(item.groups)) {
+                seenGroups.add(item.groups)
+                groupCount++
+              }
+            }
           }
-        }
+        })
+        comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
+        Object.keys(tempDeptGroupMap).forEach((dept) => {
+          tempDeptGroupMap[dept] = sortGroupByCode(tempDeptGroupMap[dept])
+        })
+        deptGroupMap.value = tempDeptGroupMap
+        ElNotification({
+          title: '提示',
+          message: `已加载：${comOptions.value.length} 个部门，共 ${groupCount} 个小组`,
+          type: 'success'
+        })
       }
-    })
-
-    comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-    Object.keys(tempDeptGroupMap).forEach((dept) => {
-      tempDeptGroupMap[dept] = sortGroupByCode(tempDeptGroupMap[dept])
-    })
-    deptGroupMap.value = tempDeptGroupMap
-    ElNotification({
-      title: '提示',
-      message: `已加载：${comOptions.value.length} 个部门，共 ${groupCount} 个小组`,
-      type: 'success'
-    })
+    } catch {
+      /* ignore */
+    }
   }
+
+  // const buildDeptGroupMap = (data: PacllXzData[]) => {
+  //   if (Object.keys(deptGroupMap.value).length) return
+  //   const comSet = new Set<string>()
+  //   const tempDeptGroupMap: DeptGroupMap = {}
+  //   const seenGroups = new Set<string>()
+  //   let groupCount = 0
+
+  //   data.forEach((item) => {
+  //     if (!item.comname) return
+  //     comSet.add(item.comname)
+  //     if (item.groups && item.groupscode) {
+  //       if (!tempDeptGroupMap[item.comname]) tempDeptGroupMap[item.comname] = []
+  //       const exists = tempDeptGroupMap[item.comname].some((g) => g.value === item.groups)
+  //       if (!exists) {
+  //         tempDeptGroupMap[item.comname].push({
+  //           label: item.groups,
+  //           value: item.groups,
+  //           groupsCode: item.groupscode
+  //         })
+  //         if (!seenGroups.has(item.groups)) {
+  //           seenGroups.add(item.groups)
+  //           groupCount++
+  //         }
+  //       }
+  //     }
+  //   })
+
+  //   comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
+  //   Object.keys(tempDeptGroupMap).forEach((dept) => {
+  //     tempDeptGroupMap[dept] = sortGroupByCode(tempDeptGroupMap[dept])
+  //   })
+  //   deptGroupMap.value = tempDeptGroupMap
+  //   ElNotification({
+  //     title: '提示',
+  //     message: `已加载：${comOptions.value.length} 个部门，共 ${groupCount} 个小组`,
+  //     type: 'success'
+  //   })
+  // }
 
   // ==================== 7. 级联监听 ====================
   watch(
@@ -244,7 +296,7 @@
     handleSizeChange,
     columns,
     columnChecks
-  } = useTable({
+  } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<PacllXzData>> => {
         const queryParams = {
@@ -260,7 +312,7 @@
         const records = page.records || []
         if (records.length) {
           if (!isInitialized) {
-            buildDeptGroupMap(records)
+            fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || '')
             isInitialized = true
           }
           currentMaxTjTime.value = records[0].maxTjTime || ''
@@ -335,24 +387,36 @@
     }
   })
 
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
+
   // ==================== 9. 操作 ====================
   const localHandleCurrentChange = (newCurrent: number) => {
     fetchData({ current: newCurrent })
   }
 
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
-  }
-
   const handleRefresh = async () => {
+    // 重置级联 map，强制重新拉全量
+    deptGroupMap.value = {}
+    comOptions.value = []
+    isInitialized = false
     try {
-      const res = await dataReport.axiosRequestPacllXz({ current: 1, size: 9999 })
+      const res = await dataReport.axiosRequestPacllXz({
+        current: 1,
+        size: 9999,
+        tjDate: tableApiParams.value.tjDate,
+        comname: ''
+      })
       if (Array.isArray(res) && res.length) {
-        buildDeptGroupMap(res)
         currentMaxTjTime.value = res[0].maxTjTime || ''
+        await fetchAllForDropdown(
+          tableApiParams.value.tjDate || res[0].maxTjTime?.substring(0, 10) || ''
+        )
+        isInitialized = true
       }
       await fetchData()
-    } catch { await fetchData() }
+    } catch {
+      await fetchData()
+    }
   }
 
   const handleSearch = async () => {

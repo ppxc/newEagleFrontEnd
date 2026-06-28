@@ -22,7 +22,7 @@
           </ElSpace>
         </template>
       </ArtTableHeader>
-      <ArtTable :loading="loading" :pagination="pagination" :data="tableData" :columns="columns" :height="tableHeight" :scrollbar-always-on="true" empty-height="660px" merge-first-column @pagination:size-change="localHandleSizeChange" @pagination:current-change="localHandleCurrentChange">
+      <ArtTable :loading="loading" :pagination="pagination" :data="mergedData" :span-method="spanMethod" :columns="columns" :height="tableHeight" :scrollbar-always-on="true" empty-height="660px" @pagination:size-change="handleSizeChange" @pagination:current-change="localHandleCurrentChange">
         <template #index="{ $index }"><span>{{ $index + 1 + (pagination.current - 1) * pagination.size }}</span></template>
       </ArtTable>
     </ElCard>
@@ -33,7 +33,8 @@
   import { ref, computed } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { repairShop } from '../../api'
   defineOptions({ name: 'WeixiuZgsCbbTable' })
@@ -69,7 +70,7 @@
     comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
     ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司`, type: 'success' })
   }
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, columns, columnChecks } = useTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<Data>> => {
         const queryParams = { current: params.current, size: params.size, tjDate: tableApiParams.value.tjDate || '', comnameSgs: tableApiParams.value.comnameSgs ?? '' }
@@ -96,8 +97,8 @@
     },
     performance: { enableCache: true, cacheTime: 5 * 60 * 1000, debounceTime: 300, maxCacheSize: 100 }
   })
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
   const localHandleCurrentChange = (n: number) => { fetchData({ current: n }) }
-  const localHandleSizeChange = (n: number) => { fetchData({ size: n, current: 1 }) }
   const handleRefresh = async () => { try { const res = await repairShop.axiosRequestZgsCbb({ current: 1, size: 9999 }); if (Array.isArray(res) && res.length) { buildDeptOptions(res); currentMaxTjTime.value = res[0].maxTjTime || '' } await fetchData() } catch { await fetchData() } }
   const handleSearch = async () => { try { await searchBarRef.value?.validate(); tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }; refreshData() } catch {} }
   const handleReset = () => { Object.assign(searchFormState.value, DEFAULT_FORM); tableApiParams.value = { ...DEFAULT_PAGINATION, ...searchFormState.value }; refreshData() }

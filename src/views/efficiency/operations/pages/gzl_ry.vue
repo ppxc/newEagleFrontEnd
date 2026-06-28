@@ -6,19 +6,17 @@
       v-model="searchFormState"
       :items="searchItems"
       :rules="rules"
-      :is-expand="false"
-      :show-expand="true"
+      :is-expand="true"
+      :show-expand="false"
       :show-reset-button="true"
       :show-search-button="true"
       :disabled-search-button="false"
       @search="handleSearch"
       @reset="handleReset"
-
-
     />
 
     <!-- 表格卡片容器 -->
-    <ElCard class="flex-1 art-table-card my-0" style="margin-top: 0; padding: 0;">
+    <ElCard class="flex-1 art-table-card my-0" style="margin-top: 0; padding: 0">
       <template #header>
         <div class="flex-cb">
           <!-- 表格标题 + 动态统计时间 -->
@@ -38,7 +36,6 @@
         @refresh="handleRefresh"
         layout="refresh,size,fullscreen,columns,settings"
         fullClass="art-table-card"
-
       >
         <template #left>
           <ElSpace wrap>
@@ -64,17 +61,17 @@
         ref="tableRef"
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="computedTableHeight"
         :scrollbar-always-on="true"
         empty-height="660px"
-        merge-first-column
         @selection-change="handleSelectionChange"
         @row-click="handleRowClick"
         @header-click="handleHeaderClick"
         @sort-change="handleSortChange"
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <!-- 序号列：自动计算分页序号 -->
@@ -144,10 +141,11 @@
   import { ref, computed, onMounted, nextTick, watch } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dailyWorkload } from '../../api'
-  const VITE_API_PROXY_PORT_URL = import.meta.env.VITE_API_PROXY_PORT_URL
+
   // 组件名称（用于 devtools 调试）
   defineOptions({ name: 'GzlRyTable' })
 
@@ -263,19 +261,22 @@
       key: 'startDate',
       label: '开始日期',
       type: 'date',
-      props: { placeholder: '选择开始日期', valueFormat: 'YYYY-MM-DD' }
+      props: { placeholder: '选择开始日期', valueFormat: 'YYYY-MM-DD' },
+      span: 4
     },
     {
       key: 'endDate',
       label: '结束日期',
       type: 'date',
-      props: { placeholder: '选择结束日期', valueFormat: 'YYYY-MM-DD' }
+      props: { placeholder: '选择结束日期', valueFormat: 'YYYY-MM-DD' },
+      span: 4
     },
     {
       key: 'comName',
       label: '部门',
       type: 'select',
-      props: { placeholder: '请选择部门', options: comOptions.value, clearable: true }
+      props: { placeholder: '请选择部门', options: comOptions.value, clearable: true },
+      span: 4
     },
     {
       key: 'groups',
@@ -286,19 +287,23 @@
         options: groupOptions.value,
         clearable: true,
         disabled: !searchFormState.value.comName
-      }
+      },
+      span: 4
     },
     {
       key: 'userName',
       label: '人员',
       type: 'input',
-      props: { placeholder: '请输入人员名称' }
+      props: { placeholder: '请输入人员名称' },
+      span: 4
     }
   ])
 
   // ==================== 4. 表格样式与高度 ====================
   const tableConfig = ref({ height: '100%', fixedHeight: false })
-  const computedTableHeight = computed(() => (tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'))  // 修改非固定高度时的计算方式
+  const computedTableHeight = computed(() =>
+    tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'
+  ) // 修改非固定高度时的计算方式
 
   // ==================== 5. 工具函数 ====================
   /**
@@ -397,7 +402,7 @@
     handleSizeChange,
     columns,
     columnChecks
-  } = useTable({
+  } = useEfficiencyTable({
     core: {
       /** 表格数据请求接口 */
       apiFn: async (params: UseTableParams): Promise<UseTableResult<DailyWorkloadData>> => {
@@ -483,6 +488,8 @@
     }
   })
 
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
+
   // ==================== 8. 表格事件（预留扩展） ====================
   const tableRef = ref<any>(null)
   const handleSelectionChange = () => {}
@@ -495,10 +502,6 @@
     fetchData({ current: newCurrent })
   }
 
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
-  }
-
   /**
    * @description 手动刷新：重新拉取全量数据
    */
@@ -507,14 +510,16 @@
       // 记录刷新日志
       // await LogService.tableLog('人员当日工作量', '刷新', tableApiParams.value)
 
-      const res = await dailyWorkload.axiosRequestDailyWorkloadRy(tableApiParams.value)      // axios 返回的已经是数据数组
+      const res = await dailyWorkload.axiosRequestDailyWorkloadRy(tableApiParams.value) // axios 返回的已经是数据数组
       if (Array.isArray(res) && res.length) {
         allOriginData.value = [...res]
         buildDeptGroupMap(allOriginData.value)
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
       await fetchData()
-    } catch { await fetchData() }
+    } catch {
+      await fetchData()
+    }
   }
 
   /**
@@ -645,7 +650,10 @@
 
 <style scoped>
   /* 搜索栏表单项：文字标签与选择框在所属列中垂直居中 */
-  :deep(.art-search-bar .el-form-item) { align-items: center; margin-bottom: 0; }
+  :deep(.art-search-bar .el-form-item) {
+    align-items: center;
+    margin-bottom: 0;
+  }
 
   /* 自定义表头样式 */
   .custom-header:hover {

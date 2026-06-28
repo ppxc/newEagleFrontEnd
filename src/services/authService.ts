@@ -49,35 +49,25 @@ export class AuthService {
       }
 
       const data = await response.json()
-      
-      // 调试日志
-      // console.log('登录响应数据:', data)
-      // console.log('响应状态:', response.status)
-      
-      if (response.ok) {
-        // 保存token到localStorage
-        if (data.code === 200 && data.data && data.data.token) {
-          // 后端返回的标准结构: { code: 200, data: { token: '...', user: {...} }}
-          const token = data.data.token;
-          const user = data.data.user;
-          
-          localStorage.setItem('access_token', token)
-          // 设置axios请求头
-          this.setAuthToken(token)
-          
-          return { 
-            success: true, 
-            token: token, 
-            data: { ...data.data, user: user } 
-          }
-        } else {
-          // 如果没有找到期望的结构，返回错误
-          // console.log('登录响应格式不符合预期，响应数据:', data);
-          return { 
-            success: false, 
-            message: data.msg || data.message || '登录响应格式错误' 
-          };
+
+      // 后端返回的标准结构: { code: 200, data: { token: '...', user: {...} }}
+      if (data.code === 200 && data.data && data.data.token) {
+        const token = data.data.token;
+        const user = data.data.user;
+
+        localStorage.setItem('access_token', token)
+        this.setAuthToken(token)
+
+        return {
+          success: true,
+          token: token,
+          data: { ...data.data, user: user }
         }
+      } else {
+        return {
+          success: false,
+          message: data.msg || data.message || '登录响应格式错误'
+        };
       }
     } catch (error) {
       console.error('登录请求失败:', error)

@@ -51,12 +51,13 @@
       <ArtTable
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="tableHeight"
         :scrollbar-always-on="true"
         empty-height="660px"
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       >
         <template #index="{ $index }">
@@ -73,7 +74,7 @@
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
   import { useLaoxiaoTable } from '../../api/useLaoxiaoTable'
-
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   defineOptions({ name: 'LisuanYearTable' })
 
   interface LisuanYearData {
@@ -98,7 +99,7 @@
 
   const {
     searchBarRef, searchFormState, searchItems, rules,
-    fetchData, tableData, loading, tableError, pagination,
+     tableData, loading, tableError, pagination,
     handleSizeChange, handleCurrentChange, columns, columnChecks,
     currentMaxTjTime, tableApiParams,
     handleRefresh, handleSearch, handleReset
@@ -122,11 +123,9 @@
       }))
     ]
   })
-
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
-  }
-
+  
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
+  
   const exportColumns = (item: LisuanYearData, index: number) => ({
     序号: index + 1,
     统计日期: item.tjdate,

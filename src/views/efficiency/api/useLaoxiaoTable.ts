@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { useTable } from '@/hooks/core/useTable'
+import { useTable, CacheInvalidationStrategy } from '@/hooks/core/useTable'
 
 /**
  * 劳效监控（laoxiao）9 个报表页面的通用 composable。
@@ -13,7 +13,7 @@ import { useTable } from '@/hooks/core/useTable'
  * 全量端点（listApi）后端返回 List<T>（仅用于构建 comnameSgs 下拉的去重 Set）
  */
 
-export interface UseLaoxiaoTableOptions<T> {
+export interface UseLaoxiaoTableOptions {
   /** 后端分页端点（返回 PageResult<T>） */
   pageApi: (params: any) => Promise<any>
   /** 后端全量端点（用于构造 comnameSgs 下拉的去重集合） */
@@ -32,14 +32,7 @@ interface UseTableParams {
   [key: string]: any
 }
 
-interface UseTableResult<T> {
-  records: T[]
-  total: number
-  current: number
-  size: number
-}
-
-export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
+export function useLaoxiaoTable(opts: UseLaoxiaoTableOptions) {
   const hasComnameSgs = opts.hasComnameSgs ?? true
   const defaultSize = opts.defaultSize ?? 20
   const defaultForm: Record<string, any> = { tjDate: '', comnameSgs: '' }
@@ -53,7 +46,11 @@ export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
     tjDate: [{ required: false, message: '请选择统计时间', trigger: 'change' }]
   }
   const searchFormState = ref({ ...defaultForm })
-  const tableApiParams = ref({ current: 1, size: defaultSize, ...searchFormState.value })
+  const tableApiParams = ref<Record<string, any>>({
+    current: 1,
+    size: defaultSize,
+    ...searchFormState.value
+  })
 
   // ==================== 搜索表单配置 ====================
   const searchItems = computed(() => {
@@ -104,13 +101,13 @@ export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
     error: tableError,
     pagination,
     refreshData,
-    handleSizeChange,
-    handleCurrentChange,
+    fetchData,
     columns,
-    columnChecks
+    columnChecks,
+    clearCache
   } = useTable({
     core: {
-      apiFn: async (params: UseTableParams): Promise<UseTableResult<T>> => {
+      apiFn: async (params: UseTableParams): Promise<any> => {
         const queryParams: Record<string, any> = {
           current: params.current,
           size: params.size,
@@ -121,8 +118,8 @@ export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
         }
         // 后端 /page 端点直接返回 { records, total, current, size }
         const response = await opts.pageApi(queryParams)
-        const page = (response ?? {}) as UseTableResult<T>
-        const records = (page.records || []) as T[]
+        const page = (response ?? {}) as any
+        const records = (page.records || []) as any[]
         if (records.length) {
           const firstRecord = records[0] as any
           currentMaxTjTime.value = firstRecord.maxTjTime || ''
@@ -161,11 +158,22 @@ export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
   })
 
   // ==================== 操作 ====================
-  const fetchData = async (override?: Partial<UseTableParams>) => {
-    if (override) {
-      tableApiParams.value = { ...tableApiParams.value, ...override }
-    }
-    await refreshData()
+
+  /**
+   * 分页大小变化：直接更新 tableApiParams，清缓存，然后调用 fetchData
+   * 让 apiFn 收到正确的 current/size 参数。
+   */
+  const handleSizeChange = async (newSize: number) => {
+    tableApiParams.value.current = 1
+    tableApiParams.value.size = newSize
+    clearCache(CacheInvalidationStrategy.CLEAR_CURRENT, '分页大小变化')
+    await fetchData({ current: 1, size: newSize })
+  }
+
+  /** 当前页变化：直接调用 fetchData，传入新的 current */
+  const handleCurrentChange = async (newCurrent: number) => {
+    tableApiParams.value.current = newCurrent
+    await fetchData({ current: newCurrent })
   }
 
   const handleRefresh = async () => {
@@ -179,9 +187,7 @@ export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
         })
         if (Array.isArray(res) && res.length) {
           currentMaxTjTime.value = (res[0] as any).maxTjTime || ''
-          buildComnameSgsOptions(
-            tableApiParams.value.tjDate || (res[0] as any).maxTjTime || ''
-          )
+          buildComnameSgsOptions(tableApiParams.value.tjDate || (res[0] as any).maxTjTime || '')
         }
       } catch {
         /* ignore */
@@ -222,7 +228,6 @@ export function useLaoxiaoTable<T = any>(opts: UseLaoxiaoTableOptions<T>) {
     loading,
     tableError,
     pagination,
-    fetchData,
     refreshData,
     handleSizeChange,
     handleCurrentChange,

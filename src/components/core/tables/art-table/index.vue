@@ -8,8 +8,6 @@
       ref="elTableRef"
       v-loading="!!loading"
       v-bind="{ ...$attrs, ...props, height, stripe, border, size, headerCellStyle }"
-      :data="displayData"
-      :span-method="computedSpanMethod"
     >
       <template v-for="col in columns" :key="col.prop || col.type">
         <!-- 渲染全局序号列 -->
@@ -139,8 +137,6 @@
     emptyText?: string
     /** 是否开启 ArtTableHeader，解决表格高度自适应问题 */
     showTableHeader?: boolean
-    /** 是否合并首列相同值的单元格 */
-    mergeFirstColumn?: boolean
   }
 
   const props = withDefaults(defineProps<ArtTableProps>(), {
@@ -152,8 +148,7 @@
     size: undefined,
     emptyHeight: '100%',
     emptyText: '暂无数据',
-    showTableHeader: true,
-    mergeFirstColumn: false
+    showTableHeader: true
   })
 
   const LAYOUT = {
@@ -197,79 +192,6 @@
   const size = computed(() => props.size ?? tableSize.value)
   // 数据是否为空
   const isEmpty = computed(() => props.data?.length === 0)
-
-  // ==================== 首列合并功能 ====================
-  // 找到第一个非类型列（跳过 selection, expand, index, globalIndex）
-  const firstDataColumnProp = computed(() => {
-    if (!props.mergeFirstColumn) return null
-    const firstCol = props.columns?.find((col) => !col.type)
-    return firstCol?.prop || null
-  })
-
-  // 当 mergeFirstColumn 开启时按首列排序，确保相同值连续
-  const displayData = computed(() => {
-    if (!props.mergeFirstColumn || !firstDataColumnProp.value || !props.data?.length) {
-      return props.data ?? []
-    }
-    const prop = firstDataColumnProp.value
-    return [...props.data].sort((a, b) => {
-      const va = a[prop], vb = b[prop]
-      if (va == null) return 1
-      if (vb == null) return -1
-      if (typeof va === 'number' && typeof vb === 'number') return va - vb
-      return String(va).localeCompare(String(vb), 'zh')
-    })
-  })
-
-  // 预计算每行的 rowspan，O(n) 复杂度
-  const rowSpanMap = computed(() => {
-    const map = new Map<number, number>()
-    if (!props.mergeFirstColumn || !firstDataColumnProp.value) return map
-
-    const data = displayData.value
-    const prop = firstDataColumnProp.value
-    if (!data.length || !prop) return map
-
-    let i = 0
-    while (i < data.length) {
-      const currentVal = data[i]?.[prop]
-      let span = 1
-      let j = i + 1
-      while (j < data.length) {
-        const nextVal = data[j]?.[prop]
-        if (currentVal === nextVal || (currentVal != null && nextVal != null && String(currentVal) === String(nextVal))) {
-          span++
-          j++
-        } else {
-          break
-        }
-      }
-      if (span > 1) {
-        map.set(i, span)
-        for (let k = i + 1; k < j; k++) {
-          map.set(k, 0)
-        }
-      }
-      i = j
-    }
-    return map
-  })
-
-  // span-method 回调
-  const computedSpanMethod = computed(() => {
-    if (!props.mergeFirstColumn) return undefined
-    // 找出第一个非类型列（selection/expand/index/globalIndex）的索引
-    const firstDataColIndex = (props.columns || []).findIndex((col) => !col.type)
-    if (firstDataColIndex === -1) return undefined
-
-    return ({ row, column, rowIndex, columnIndex }: { row: any; column: any; rowIndex: number; columnIndex: number }) => {
-      if (columnIndex === firstDataColIndex) {
-        const span = rowSpanMap.value.get(rowIndex)
-        if (span !== undefined) return { rowspan: span, colspan: span === 0 ? 0 : 1 }
-      }
-      return undefined
-    }
-  })
 
   const paginationHeight = ref(0)
   const tableHeaderHeight = ref(0)

@@ -15,7 +15,7 @@
     <ElCard class="flex-1 art-table-card" style="margin-top: 0; padding: 5px">
       <template #header>
         <div class="flex-cb">
-          <h4 class="m-0">综合赔付率-险种【统计时间：{{ currentMaxTjTime }}】</h4>
+          <h4 class="m-0">车均定损-人员【统计时间：{{ currentMaxTjTime }}】</h4>
           <div class="flex gap-1">
             <ElTag v-if="tableError" type="danger">{{ tableError.message }}</ElTag>
             <ElTag v-else-if="loading" type="warning">加载中...</ElTag>
@@ -72,22 +72,42 @@
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
-  import { comprehensiveLossRate } from '../../api'
-  defineOptions({ name: 'ZhpflXzTable' })
+  import { carAvgLoss } from '../../api'
+  defineOptions({ name: 'ChejunRyTable' })
 
   interface Data {
     id: number | null | undefined
-    tjDate: string | null
+    tjdate: string | null
+    comcodeSgs: string
     comnameSgs: string
-    xl: string
-    jbf: number
-    pfcb: number
-    fy: number
-    glfy: number
-    zhcbl: string
-    zhcblTb: string
-    zhpl: string
-    zhplTb: string
+    comcode: string
+    comname: string
+    username: string
+    usercode: string
+    ajsBn: number | null
+    ajsTb: number | null
+    dsjeBn: number | null
+    dsjeTb: number | null
+    cjBn: number | null
+    cjTb: number | null
+    lwnCjBn: number | null
+    lwnCjTb: number | null
+    lwysCjBn: number | null
+    lwysCjTb: number | null
+    hjcjBn: number | null
+    hjcjTb: number | null
+    gscjBn: number | null
+    gscjTb: number | null
+    hxb: number | null
+    hxbTb: number | null
+    ajsQn: number | null
+    dsjeQn: number | null
+    cjQn: number | null
+    lwnCjQn: number | null
+    lwysCjQn: number | null
+    hjcjQn: number | null
+    gscjQn: number | null
+    hxbQn: number | null
     maxTjTime: string | null
   }
   interface SelectOption {
@@ -108,12 +128,12 @@
 
   const tableHeight = 'calc(100vh - 330px)'
   const DEFAULT_PAGINATION = { current: 1, size: 20 }
-  const DEFAULT_FORM = { tjDate: '', xl: '' }
+  const DEFAULT_FORM = { tjDate: '', comnameSgs: '' }
 
   const searchBarRef = ref<any>(null)
   const currentMaxTjTime = ref<string>('')
   let isInitialized = false
-  const xlOptions = ref<SelectOption[]>([])
+  const comOptions = ref<SelectOption[]>([])
   const rules = { tjDate: [{ required: false, message: '请选择统计时间', trigger: 'change' }] }
   const searchFormState = ref({ ...DEFAULT_FORM })
   const tableApiParams = ref({ ...DEFAULT_PAGINATION, ...searchFormState.value })
@@ -122,13 +142,15 @@
       key: 'tjDate',
       label: '统计时间',
       type: 'date',
+      span: 6,
       props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' }
     },
     {
-      key: 'xl',
-      label: '险种',
+      key: 'comnameSgs',
+      label: '市公司',
       type: 'select',
-      props: { placeholder: '请选择险种', options: xlOptions.value, clearable: true }
+      span: 6,
+      props: { placeholder: '请选择市公司', options: comOptions.value, clearable: true }
     }
   ])
 
@@ -136,23 +158,23 @@
   // 用独立的全量端点（/list, size: 9999）构建市公司下拉，避免首屏分页只有 20 行时遗漏
   // 后续页中才出现的市公司。返回的集合是全量的，与分页结果无关。
   const fetchAllForDropdown = async () => {
-    if (xlOptions.value.length) return
+    if (comOptions.value.length) return
     try {
-      const res = await comprehensiveLossRate.axiosRequestZhpflXz({
+      const res = await carAvgLoss.axiosRequestChejunRy({
         current: 1,
         size: 9999,
         tjDate: tableApiParams.value.tjDate || '',
-        xl: tableApiParams.value.xl ?? ''
+        comnameSgs: tableApiParams.value.comnameSgs ?? ''
       })
       if (Array.isArray(res) && res.length) {
         const set = new Set<string>()
         res.forEach((item) => {
-          if (item.xl) set.add(item.xl)
+          if (item.comnameSgs) set.add(item.comnameSgs)
         })
-        xlOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
+        comOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
         ElNotification({
           title: '提示',
-          message: `已加载：${xlOptions.value.length} 个市公司`,
+          message: `已加载：${comOptions.value.length} 个市公司`,
           type: 'success'
         })
       }
@@ -160,16 +182,16 @@
       /* ignore */
     }
   }
-  const buildOptions = (data: Data[]) => {
-    if (xlOptions.value.length) return
-    const set = new Set<string>()
+  const buildDeptOptions = (data: Data[]) => {
+    if (comOptions.value.length) return
+    const comSet = new Set<string>()
     data.forEach((item) => {
-      if (item.xl) set.add(item.xl)
+      if (item.comnameSgs) comSet.add(item.comnameSgs)
     })
-    xlOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
+    comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
     ElNotification({
       title: '提示',
-      message: `已加载：${xlOptions.value.length} 个险种`,
+      message: `已加载：${comOptions.value.length} 个市公司`,
       type: 'success'
     })
   }
@@ -190,9 +212,9 @@
           current: params.current,
           size: params.size,
           tjDate: tableApiParams.value.tjDate || '',
-          xl: tableApiParams.value.xl ?? ''
+          comnameSgs: tableApiParams.value.comnameSgs ?? ''
         }
-        const response = await comprehensiveLossRate.axiosRequestZhpflXzPage(queryParams)
+        const response = await carAvgLoss.axiosRequestChejunRyPage(queryParams)
         const page = (response ?? {}) as UseTableResult<Data>
         const records = page.records || []
         if (records.length) {
@@ -214,21 +236,57 @@
       columnsFactory: () => [
         {
           prop: 'comnameSgs',
-          label: '市公司',
-          minWidth: 200,
+          label: '市公司（定损地）',
+          minWidth: 130,
           align: 'center',
           fixed: 'left',
           sortable: true
         },
-        { prop: 'xl', label: '险种', width: 120, align: 'center', fixed: 'left', sortable: true },
-        { prop: 'jbf', label: '净保费', width: 140, align: 'center', sortable: true },
-        { prop: 'pfcb', label: '赔付成本', width: 140, align: 'center', sortable: true },
-        { prop: 'fy', label: '费用', width: 120, align: 'center', sortable: true },
-        { prop: 'glfy', label: '管理费用', width: 120, align: 'center', sortable: true },
-        { prop: 'zhcbl', label: '综合成本率', width: 130, align: 'center', sortable: true },
-        { prop: 'zhcblTb', label: '综合成本率同比', width: 150, align: 'center', sortable: true },
-        { prop: 'zhpl', label: '综合利润率', width: 130, align: 'center', sortable: true },
-        { prop: 'zhplTb', label: '综合利润率同比', width: 150, align: 'center', sortable: true }
+        {
+          prop: 'comname',
+          label: '处理部门',
+          minWidth: 130,
+          align: 'center',
+          fixed: 'left',
+          sortable: true
+        },
+        {
+          prop: 'username',
+          label: '处理人员',
+          minWidth: 100,
+          align: 'center',
+          fixed: 'left',
+          sortable: true
+        },
+        { prop: 'usercode', label: '处理工号', width: 100, align: 'center', sortable: true },
+        { prop: 'ajsBn', label: '定损台数', width: 100, align: 'center', sortable: true },
+        { prop: 'ajsTb', label: '同比（%）', width: 100, align: 'center', sortable: true },
+        { prop: 'dsjeBn', label: '定损金额（万元）', width: 130, align: 'center', sortable: true },
+        { prop: 'dsjeTb', label: '同比（%）', width: 100, align: 'center', sortable: true },
+        { prop: 'cjBn', label: '车均定损（整体）', width: 130, align: 'center', sortable: true },
+        { prop: 'cjTb', label: '同比（%）', width: 100, align: 'center', sortable: true },
+        {
+          prop: 'lwnCjBn',
+          label: '车均定损（2万内）',
+          width: 130,
+          align: 'center',
+          sortable: true
+        },
+        { prop: 'lwnCjTb', label: '同比（%）', width: 100, align: 'center', sortable: true },
+        {
+          prop: 'lwysCjBn',
+          label: '车均定损（2万以上）',
+          width: 140,
+          align: 'center',
+          sortable: true
+        },
+        { prop: 'lwysCjTb', label: '同比（%）', width: 100, align: 'center', sortable: true },
+        { prop: 'hjcjBn', label: '车均换件（元）', width: 130, align: 'center', sortable: true },
+        { prop: 'hjcjTb', label: '同比（%）', width: 100, align: 'center', sortable: true },
+        { prop: 'gscjBn', label: '车均工时（元）', width: 130, align: 'center', sortable: true },
+        { prop: 'gscjTb', label: '同比（%）', width: 100, align: 'center', sortable: true },
+        { prop: 'hxb', label: '换修比', width: 90, align: 'center', sortable: true },
+        { prop: 'hxbTb', label: '同比（%）', width: 100, align: 'center', sortable: true }
       ]
     },
     performance: {
@@ -244,9 +302,9 @@
   }
   const handleRefresh = async () => {
     try {
-      const res = await comprehensiveLossRate.axiosRequestZhpflXz({ current: 1, size: 9999 })
+      const res = await carAvgLoss.axiosRequestChejunRy({ current: 1, size: 9999 })
       if (Array.isArray(res) && res.length) {
-        buildOptions(res)
+        buildDeptOptions(res)
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
       await fetchData()
@@ -260,7 +318,8 @@
       tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }
       refreshData()
     } catch {
-      /* ignore */
+      ElNotification({ title: '提示', message: '查询参数错误，请检查后重试', type: 'warning' })
+      return
     }
   }
   const handleReset = () => {
@@ -270,16 +329,26 @@
   }
   const exportColumns = (item: Data, i: number) => ({
     序号: i + 1,
-    市公司: item.comnameSgs,
-    险种: item.xl,
-    净保费: item.jbf,
-    赔付成本: item.pfcb,
-    费用: item.fy,
-    管理费用: item.glfy,
-    综合成本率: item.zhcbl,
-    综合成本率同比: item.zhcblTb,
-    综合利润率: item.zhpl,
-    综合利润率同比: item.zhplTb
+    '市公司（定损地）': item.comnameSgs,
+    处理部门: item.comname,
+    处理人员: item.username,
+    处理工号: item.usercode,
+    定损台数: item.ajsBn,
+    '定损台数-同比': item.ajsTb,
+    '定损金额（万元）': item.dsjeBn,
+    '定损金额-同比': item.dsjeTb,
+    '车均定损（整体）': item.cjBn,
+    '车均定损-同比': item.cjTb,
+    '车均定损（2万内）': item.lwnCjBn,
+    '车均定损-同比-2万内': item.lwnCjTb,
+    '车均定损（2万以上）': item.lwysCjBn,
+    '车均定损-同比-2万以上': item.lwysCjTb,
+    '车均换件（元）': item.hjcjBn,
+    '车均换件-同比': item.hjcjTb,
+    '车均工时（元）': item.gscjBn,
+    '车均工时-同比': item.gscjTb,
+    换修比: item.hxb,
+    '换修比-同比': item.hxbTb
   })
   const dateSuffix = () => new Date().toLocaleDateString().replace(/\//g, '-')
   const handleExportCurrent = () => {
@@ -290,13 +359,16 @@
     }
     const ws = XLSX.utils.json_to_sheet(data.map(exportColumns))
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, '综合赔付率-险种')
-    XLSX.writeFile(wb, `综合赔付率-险种_${dateSuffix()}.xlsx`)
+    XLSX.utils.book_append_sheet(wb, ws, '车均定损-人员')
+    XLSX.writeFile(wb, `车均定损-人员_${dateSuffix()}.xlsx`)
     ElNotification({ title: '成功', message: '导出成功', type: 'success' })
   }
   const handleExportAll = async () => {
     try {
-      const res = await comprehensiveLossRate.axiosRequestZhpflXz(tableApiParams.value)
+      const res = await carAvgLoss.axiosRequestChejunRy({
+        tjDate: tableApiParams.value.tjDate || '',
+        comnameSgs: tableApiParams.value.comnameSgs ?? ''
+      })
       const data = (Array.isArray(res) ? res : []) as Data[]
       if (!data.length) {
         ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' })
@@ -304,8 +376,8 @@
       }
       const ws = XLSX.utils.json_to_sheet(data.map(exportColumns))
       const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, '综合赔付率-险种')
-      XLSX.writeFile(wb, `综合赔付率-险种_全部_${dateSuffix()}.xlsx`)
+      XLSX.utils.book_append_sheet(wb, ws, '车均定损-人员')
+      XLSX.writeFile(wb, `车均定损-人员_全部_${dateSuffix()}.xlsx`)
       ElNotification({ title: '成功', message: `${data.length} 条数据导出成功`, type: 'success' })
     } catch {
       ElNotification({ title: '错误', message: '导出失败', type: 'error' })

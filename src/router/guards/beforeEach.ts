@@ -44,7 +44,7 @@ export function setupBeforeEachGuard(router: Router): void {
     async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
       try {
         await handleRouteGuard(to, from, next, router)
-      } catch (error) {
+      } catch (error: any) {
         console.error('[RouteGuard] 路由守卫处理失败:', error)
         closeLoading()
         next({ name: 'Exception500' })
@@ -167,7 +167,7 @@ async function handleDynamicRoutes(
         replace: true
       })
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[RouteGuard] 动态路由注册失败:', error)
     closeLoading()
 

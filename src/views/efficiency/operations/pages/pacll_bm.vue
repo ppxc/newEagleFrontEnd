@@ -51,13 +51,13 @@
       <ArtTable
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="tableHeight"
         :scrollbar-always-on="true"
         empty-height="660px"
-        merge-first-column
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <template #index="{ $index }">
@@ -72,7 +72,8 @@
   import { ref, computed } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
 
@@ -129,6 +130,35 @@
   const comOptions = ref<SelectOption[]>([])
 
   // ==================== 5. 搜索表单 ====================
+
+  // ==================== 5. 构建下拉 (全量版) ====================
+  // 用独立的全量端点（/list, size: 9999）构建部门下拉，避免首屏分页只有 20 行时遗漏
+  // 后续页中才出现的部门。返回的集合是全量的，与分页结果无关。
+  const fetchAllForDropdown = async () => {
+    if (comOptions.value.length) return
+    try {
+      const res = await dataReport.axiosRequestPacllBm({
+        current: 1,
+        size: 9999,
+        tjDate: tableApiParams.value.tjDate || '',
+        comname: tableApiParams.value.comname ?? ''
+      })
+      if (Array.isArray(res) && res.length) {
+        const set = new Set<string>()
+        res.forEach((item) => {
+          if (item.comname) set.add(item.comname)
+        })
+        comOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
+        ElNotification({
+          title: '提示',
+          message: `已加载：${comOptions.value.length} 个部门`,
+          type: 'success'
+        })
+      }
+    } catch {
+      /* ignore */
+    }
+  }
   const rules = { tjDate: [{ required: false, message: '请选择统计时间', trigger: 'change' }] }
   const searchFormState = ref({ ...DEFAULT_FORM })
   const tableApiParams = ref({ ...DEFAULT_PAGINATION, ...searchFormState.value })
@@ -174,7 +204,7 @@
     handleSizeChange,
     columns,
     columnChecks
-  } = useTable({
+  } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<PacllBmData>> => {
         const queryParams = {
@@ -189,7 +219,7 @@
         const records = page.records || []
         if (records.length) {
           if (!isInitialized) {
-            buildDeptOptions(records)
+            fetchAllForDropdown()
             isInitialized = true
           }
           currentMaxTjTime.value = records[0].maxTjTime || ''
@@ -249,13 +279,11 @@
     }
   })
 
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
+
   // ==================== 8. 操作 ====================
   const localHandleCurrentChange = (newCurrent: number) => {
     fetchData({ current: newCurrent })
-  }
-
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
   }
 
   const handleRefresh = async () => {
@@ -266,7 +294,9 @@
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
       await fetchData()
-    } catch { await fetchData() }
+    } catch {
+      await fetchData()
+    }
   }
 
   const handleSearch = async () => {

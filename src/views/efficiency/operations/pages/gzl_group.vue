@@ -6,8 +6,8 @@
       v-model="searchFormState"
       :items="searchItems"
       :rules="rules"
-      :is-expand="false"
-      :show-expand="true"
+      :is-expand="true"
+      :show-expand="false"
       :show-reset-button="true"
       :show-search-button="true"
       :disabled-search-button="false"
@@ -61,17 +61,17 @@
         ref="tableRef"
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="computedTableHeight"
         :scrollbar-always-on="true"
-        merge-first-column
         empty-height="660px"
         @selection-change="handleSelectionChange"
         @row-click="handleRowClick"
         @header-click="handleHeaderClick"
         @sort-change="handleSortChange"
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <!-- 序号列：自动计算分页序号 -->
@@ -135,10 +135,10 @@
   import { ref, computed, onMounted, nextTick, watch } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dailyWorkload } from '../../api'
-  const VITE_API_PROXY_PORT_URL = import.meta.env.VITE_API_PROXY_PORT_URL
 
   // 组件名称（用于 devtools 调试）
   defineOptions({ name: 'GzlGroupTable' })
@@ -213,7 +213,6 @@
     endDate: [{ required: false, message: '请选择结束日期', trigger: 'change' }]
   }
 
-
   const searchFormState = ref({
     startDate: '',
     endDate: '',
@@ -232,19 +231,22 @@
       key: 'startDate',
       label: '开始日期',
       type: 'date',
-      props: { placeholder: '选择开始日期', valueFormat: 'YYYY-MM-DD' }
+      props: { placeholder: '选择开始日期', valueFormat: 'YYYY-MM-DD' },
+      span: 4
     },
     {
       key: 'endDate',
       label: '结束日期',
       type: 'date',
-      props: { placeholder: '选择结束日期', valueFormat: 'YYYY-MM-DD' }
+      props: { placeholder: '选择结束日期', valueFormat: 'YYYY-MM-DD' },
+      span: 4
     },
     {
       key: 'comName',
       label: '部门',
       type: 'select',
-      props: { placeholder: '请选择部门', options: comOptions.value, clearable: true }
+      props: { placeholder: '请选择部门', options: comOptions.value, clearable: true },
+      span: 4
     },
     {
       key: 'groups',
@@ -255,13 +257,16 @@
         options: groupOptions.value,
         clearable: true,
         disabled: !searchFormState.value.comName
-      }
+      },
+      span: 4
     }
   ])
 
   // ==================== 4. 表格样式与高度 ====================
   const tableConfig = ref({ height: '100%', fixedHeight: false })
-  const computedTableHeight = computed(() => (tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'))
+  const computedTableHeight = computed(() =>
+    tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'
+  )
 
   // ==================== 5. 工具函数 ====================
   const sortGroupByCode = (groups: GroupOption[]) => {
@@ -343,7 +348,7 @@
     handleSizeChange,
     columns,
     columnChecks
-  } = useTable({
+  } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<DailyWorkloadGroupData>> => {
         const queryParams = {
@@ -395,7 +400,14 @@
           fixed: 'left',
           sortable: true
         },
-        { prop: 'groups', label: '小组', width: 150, align: 'center', sortable: true, fixed: 'left' },
+        {
+          prop: 'groups',
+          label: '小组',
+          width: 150,
+          align: 'center',
+          sortable: true,
+          fixed: 'left'
+        },
         { prop: 'groupsCode', label: '小组编码', width: 140, align: 'center', sortable: true },
         { prop: 'ckJsl', label: '查勘件数量', width: 120, align: 'center', sortable: true },
         {
@@ -424,6 +436,8 @@
     }
   })
 
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
+
   // ==================== 8. 表格事件 ====================
   const tableRef = ref<any>(null)
   const handleSelectionChange = () => {}
@@ -434,10 +448,6 @@
   // ==================== 9. 页面操作方法 ====================
   const localHandleCurrentChange = (newCurrent: number) => {
     fetchData({ current: newCurrent })
-  }
-
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
   }
 
   const handleRefresh = async () => {
@@ -452,7 +462,9 @@
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
       await fetchData()
-    } catch { await fetchData() }
+    } catch {
+      await fetchData()
+    }
   }
 
   const handleSearch = async () => {
@@ -565,7 +577,10 @@
 
 <style scoped>
   /* 搜索栏表单项：文字标签与选择框在所属列中垂直居中 */
-  :deep(.art-search-bar .el-form-item) { align-items: center; margin-bottom: 0; }
+  :deep(.art-search-bar .el-form-item) {
+    align-items: center;
+    margin-bottom: 0;
+  }
 
   .custom-header:hover {
     color: var(--el-color-primary-light-3);

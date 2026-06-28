@@ -51,12 +51,13 @@
       <ArtTable
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="tableHeight"
         :scrollbar-always-on="true"
         empty-height="660px"
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       >
         <template #index="{ $index }">
@@ -73,6 +74,7 @@
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
   import { useLaoxiaoTable } from '../../api/useLaoxiaoTable'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
 
   defineOptions({ name: 'RsTjlMonthTable' })
 
@@ -86,14 +88,37 @@
     tjMonth: string | null
     jaflag: string | null
     hj: number | null
-    day1: number | null; day2: number | null; day3: number | null; day4: number | null
-    day5: number | null; day6: number | null; day7: number | null; day8: number | null
-    day9: number | null; day10: number | null; day11: number | null; day12: number | null
-    day13: number | null; day14: number | null; day15: number | null; day16: number | null
-    day17: number | null; day18: number | null; day19: number | null; day20: number | null
-    day21: number | null; day22: number | null; day23: number | null; day24: number | null
-    day25: number | null; day26: number | null; day27: number | null; day28: number | null
-    day29: number | null; day30: number | null; day31: number | null
+    day1: number | null
+    day2: number | null
+    day3: number | null
+    day4: number | null
+    day5: number | null
+    day6: number | null
+    day7: number | null
+    day8: number | null
+    day9: number | null
+    day10: number | null
+    day11: number | null
+    day12: number | null
+    day13: number | null
+    day14: number | null
+    day15: number | null
+    day16: number | null
+    day17: number | null
+    day18: number | null
+    day19: number | null
+    day20: number | null
+    day21: number | null
+    day22: number | null
+    day23: number | null
+    day24: number | null
+    day25: number | null
+    day26: number | null
+    day27: number | null
+    day28: number | null
+    day29: number | null
+    day30: number | null
+    day31: number | null
     maxTjTime: string | null
   }
 
@@ -101,17 +126,36 @@
 
   // 人伤调解量-月度每日：仅 tjDate 筛选，无 comnameSgs 下拉
   const {
-    searchBarRef, searchFormState, searchItems, rules,
-    fetchData, tableData, loading, tableError, pagination,
-    handleSizeChange, handleCurrentChange, columns, columnChecks,
-    currentMaxTjTime, tableApiParams,
-    handleRefresh, handleSearch, handleReset
+    searchBarRef,
+    searchFormState,
+    searchItems,
+    rules,
+    tableData,
+    loading,
+    tableError,
+    pagination,
+    handleSizeChange,
+    handleCurrentChange,
+    columns,
+    columnChecks,
+    currentMaxTjTime,
+    tableApiParams,
+    handleRefresh,
+    handleSearch,
+    handleReset
   } = useLaoxiaoTable<RsTjlMonthData>({
     pageApi: dataReport.axiosRequestRsTjlMonthPage,
     listApi: dataReport.axiosRequestRsTjlMonth,
     hasComnameSgs: false,
     columnsFactory: () => [
-      { prop: 'comname', label: '地市', width: 130, align: 'center', fixed: 'left', sortable: true },
+      {
+        prop: 'comname',
+        label: '地市',
+        width: 130,
+        align: 'center',
+        fixed: 'left',
+        sortable: true
+      },
       { prop: 'username', label: '人员', width: 100, align: 'center', fixed: 'left' },
       { prop: 'fenzu', label: '分组合计', width: 120, align: 'center', fixed: 'left' },
       { prop: 'usercode', label: '工号', width: 110, align: 'center' },
@@ -127,10 +171,6 @@
     ]
   })
 
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
-  }
-
   const exportColumns = (item: RsTjlMonthData, index: number) => ({
     序号: index + 1,
     地市: item.comname,
@@ -139,16 +179,39 @@
     工号: item.usercode,
     统计月: item.tjMonth,
     汇总: item.hj,
-    '1号': item.day1, '2号': item.day2, '3号': item.day3, '4号': item.day4,
-    '5号': item.day5, '6号': item.day6, '7号': item.day7, '8号': item.day8,
-    '9号': item.day9, '10号': item.day10, '11号': item.day11, '12号': item.day12,
-    '13号': item.day13, '14号': item.day14, '15号': item.day15, '16号': item.day16,
-    '17号': item.day17, '18号': item.day18, '19号': item.day19, '20号': item.day20,
-    '21号': item.day21, '22号': item.day22, '23号': item.day23, '24号': item.day24,
-    '25号': item.day25, '26号': item.day26, '27号': item.day27, '28号': item.day28,
-    '29号': item.day29, '30号': item.day30, '31号': item.day31
+    '1号': item.day1,
+    '2号': item.day2,
+    '3号': item.day3,
+    '4号': item.day4,
+    '5号': item.day5,
+    '6号': item.day6,
+    '7号': item.day7,
+    '8号': item.day8,
+    '9号': item.day9,
+    '10号': item.day10,
+    '11号': item.day11,
+    '12号': item.day12,
+    '13号': item.day13,
+    '14号': item.day14,
+    '15号': item.day15,
+    '16号': item.day16,
+    '17号': item.day17,
+    '18号': item.day18,
+    '19号': item.day19,
+    '20号': item.day20,
+    '21号': item.day21,
+    '22号': item.day22,
+    '23号': item.day23,
+    '24号': item.day24,
+    '25号': item.day25,
+    '26号': item.day26,
+    '27号': item.day27,
+    '28号': item.day28,
+    '29号': item.day29,
+    '30号': item.day30,
+    '31号': item.day31
   })
-
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
   const dateSuffix = () => new Date().toLocaleDateString().replace(/\//g, '-')
   const SHEET_NAME = '人伤调解量-月度每日'
 

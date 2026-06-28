@@ -11,7 +11,6 @@
       :show-reset-button="true"
       :show-search-button="true"
       :disabled-search-button="false"
-
       @search="handleSearch"
       @reset="handleReset"
     />
@@ -62,16 +61,16 @@
         ref="tableRef"
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="computedTableHeight"
         empty-height="580px"
-        merge-first-column
         @selection-change="handleSelectionChange"
         @row-click="handleRowClick"
         @header-click="handleHeaderClick"
         @sort-change="handleSortChange"
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <!-- 序号列：自动计算分页序号 -->
@@ -111,10 +110,11 @@
   import { ref, computed, onMounted, nextTick } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dailyWorkload } from '../../api'
-  const VITE_API_PROXY_PORT_URL = import.meta.env.VITE_API_PROXY_PORT_URL
+
   // 组件名称
   defineOptions({ name: 'GzlRsTable' })
 
@@ -163,7 +163,6 @@
     endDate: [{ required: false, message: '请选择结束日期', trigger: 'change' }]
   }
 
-
   const searchFormState = ref({
     startDate: '',
     endDate: '',
@@ -199,7 +198,9 @@
 
   // ==================== 4. 表格样式 ====================
   const tableConfig = ref({ height: '100%', fixedHeight: false })
-  const computedTableHeight = computed(() => (tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'))
+  const computedTableHeight = computed(() =>
+    tableConfig.value.fixedHeight ? '660px' : 'calc(100vh - 330px)'
+  )
 
   // ==================== 5. 构建部门下拉框 ====================
   const buildDeptOptions = (data: DailyWorkloadRsData[]) => {
@@ -231,7 +232,7 @@
     handleSizeChange,
     columns,
     columnChecks
-  } = useTable({
+  } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<DailyWorkloadRsData>> => {
         const queryParams = {
@@ -303,6 +304,8 @@
     }
   })
 
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
+
   // ==================== 8. 事件 ====================
   const tableRef = ref<any>(null)
   const handleSelectionChange = () => {}
@@ -313,10 +316,6 @@
   // ==================== 9. 刷新 / 搜索 / 重置 ====================
   const localHandleCurrentChange = (newCurrent: number) => {
     fetchData({ current: newCurrent })
-  }
-
-  const localHandleSizeChange = (newSize: number) => {
-    fetchData({ size: newSize, current: 1 })
   }
 
   const handleRefresh = async () => {
@@ -331,7 +330,9 @@
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
       await fetchData()
-    } catch { await fetchData() }
+    } catch {
+      await fetchData()
+    }
   }
 
   const handleSearch = async () => {
@@ -426,7 +427,10 @@
 
 <style scoped>
   /* 搜索栏表单项：文字标签与选择框在所属列中垂直居中 */
-  :deep(.art-search-bar .el-form-item) { align-items: center; margin-bottom: 0; }
+  :deep(.art-search-bar .el-form-item) {
+    align-items: center;
+    margin-bottom: 0;
+  }
 
   .custom-header:hover {
     color: var(--el-color-primary-light-3);

@@ -122,11 +122,11 @@ export const efficiencyRoutes: AppRouteRecord[] = [
             }
           },
           {
-            path: 'pacll_bm_shishi',
-            name: 'PacllBmShishi',
-            component: '/efficiency/operations/pages/pacll_bm_shishi',
+            path: 'pacll_cx_zgs',
+            name: 'PacllCxZgs',
+            component: '/efficiency/operations/pages/pacll_cx_zgs',
             meta: {
-              title: '赔案处理率-部门实时',
+              title: '车险结案率-支公司',
               keepAlive: false,
               roles: ['R_ADMIN', 'R_SUPER']
             }
@@ -147,16 +147,6 @@ export const efficiencyRoutes: AppRouteRecord[] = [
             component: '/efficiency/operations/pages/jieanl_ry',
             meta: {
               title: '每日结案量-人员实时',
-              keepAlive: false,
-              roles: ['R_ADMIN', 'R_SUPER']
-            }
-          },
-          {
-            path: 'pacll_cx_zgs',
-            name: 'PacllCxZgs',
-            component: '/efficiency/operations/pages/pacll_cx_zgs',
-            meta: {
-              title: '车险结案率-支公司',
               keepAlive: false,
               roles: ['R_ADMIN', 'R_SUPER']
             }
@@ -429,15 +419,6 @@ export const efficiencyRoutes: AppRouteRecord[] = [
               roles: ['R_ADMIN', 'R_SUPER']
             }
           },
-          {
-            path: 'pflbdn_pinpai',
-            name: 'PflbdnPinpai',
-            component: '/efficiency/costcontrol/pages/pflbdn_pinpai',
-            meta: {
-              title: '保单年-品牌',
-              keepAlive: false,
-              roles: ['R_ADMIN', 'R_SUPER']
-            }
           },
           {
             path: 'pflbdn_xny',
@@ -501,11 +482,41 @@ export const efficiencyRoutes: AppRouteRecord[] = [
         },
         children: [
           {
-            path: 'placeholder',
-            name: 'ChejunDingsunPlaceholder',
-            component: '/efficiency/costcontrol/pages/chejun_dingsun_placeholder',
+            path: 'chejun_ry',
+            name: 'ChejunRy',
+            component: '/efficiency/costcontrol/pages/chejun_ry',
             meta: {
-              title: 'menus.costControl.carAvgLoss.placeholder.title',
+              title: '车均定损-人员',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'chejun_clbm',
+            name: 'ChejunClbm',
+            component: '/efficiency/costcontrol/pages/chejun_clbm',
+            meta: {
+              title: '车均定损-处理部门',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'chejun_bm',
+            name: 'ChejunBm',
+            component: '/efficiency/costcontrol/pages/chejun_bm',
+            meta: {
+              title: '车均定损-定损区域',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'chejun_sgs',
+            name: 'ChejunSgs',
+            component: '/efficiency/costcontrol/pages/chejun_sgs',
+            meta: {
+              title: '车均定损-市公司',
               keepAlive: false,
               roles: ['R_ADMIN', 'R_SUPER']
             }
@@ -737,6 +748,17 @@ export const efficiencyRoutes: AppRouteRecord[] = [
             }
           }
         ]
+      },
+      // ==================== 工作量钻取图 ====================
+      {
+        path: 'workload_drill',
+        name: 'LaoxiaoWorkloadDrill',
+        component: '/efficiency/laoxiao/pages/workload/WorkloadDrillChart',
+        meta: {
+          title: 'menus.laoxiao.workloadDrill.title',
+          keepAlive: false,
+          roles: ['R_ADMIN', 'R_SUPER']
+        }
       }
     ]
   }

@@ -14,7 +14,7 @@
       @reset="handleReset"
     />
 
-    <ElCard class="flex-1 art-table-card" style="margin-top: 0;padding: 5px;">
+    <ElCard class="flex-1 art-table-card" style="margin-top: 0; padding: 5px">
       <template #header>
         <div class="flex-cb">
           <h4 class="m-0">每日结案量-人员实时【统计时间：{{ currentMaxTjTime }}】</h4>
@@ -51,12 +51,13 @@
       <ArtTable
         :loading="loading"
         :pagination="pagination"
-        :data="tableData"
+        :data="mergedData"
+        :span-method="spanMethod"
         :columns="columns"
         :height="tableHeight"
         :scrollbar-always-on="true"
         empty-height="660px"
-        @pagination:size-change="localHandleSizeChange"
+        @pagination:size-change="handleSizeChange"
         @pagination:current-change="localHandleCurrentChange"
       >
         <template #index="{ $index }">
@@ -71,7 +72,8 @@
   import { ref, computed } from 'vue'
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
-  import { useTable } from '@/hooks/core/useTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+  import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
 
@@ -82,19 +84,54 @@
     comname: string | null
     username: string | null
     hj: number | null
-    day01: number | null; day02: number | null; day03: number | null; day04: number | null
-    day05: number | null; day06: number | null; day07: number | null; day08: number | null
-    day09: number | null; day10: number | null; day11: number | null; day12: number | null
-    day13: number | null; day14: number | null; day15: number | null; day16: number | null
-    day17: number | null; day18: number | null; day19: number | null; day20: number | null
-    day21: number | null; day22: number | null; day23: number | null; day24: number | null
-    day25: number | null; day26: number | null; day27: number | null; day28: number | null
-    day29: number | null; day30: number | null; day31: number | null
+    day01: number | null
+    day02: number | null
+    day03: number | null
+    day04: number | null
+    day05: number | null
+    day06: number | null
+    day07: number | null
+    day08: number | null
+    day09: number | null
+    day10: number | null
+    day11: number | null
+    day12: number | null
+    day13: number | null
+    day14: number | null
+    day15: number | null
+    day16: number | null
+    day17: number | null
+    day18: number | null
+    day19: number | null
+    day20: number | null
+    day21: number | null
+    day22: number | null
+    day23: number | null
+    day24: number | null
+    day25: number | null
+    day26: number | null
+    day27: number | null
+    day28: number | null
+    day29: number | null
+    day30: number | null
+    day31: number | null
     maxTjTime: string | null
   }
-  interface SelectOption { label: string; value: string }
-  interface UseTableParams { current: number; size: number; [key: string]: any }
-  interface UseTableResult<T> { records: T[]; total: number; current: number; size: number }
+  interface SelectOption {
+    label: string
+    value: string
+  }
+  interface UseTableParams {
+    current: number
+    size: number
+    [key: string]: any
+  }
+  interface UseTableResult<T> {
+    records: T[]
+    total: number
+    current: number
+    size: number
+  }
 
   const tableHeight = 'calc(100vh - 330px)'
   const DEFAULT_PAGINATION = { current: 1, size: 20 }
@@ -110,23 +147,80 @@
   const tableApiParams = ref({ ...DEFAULT_PAGINATION, ...searchFormState.value })
 
   const searchItems = computed(() => [
-    { key: 'tjDate', label: '统计时间', type: 'date', props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' } },
-    { key: 'comname', label: '部门', type: 'select', props: { placeholder: '请选择部门', options: comnameOptions.value, clearable: true } }
+    {
+      key: 'tjDate',
+      label: '统计时间',
+      type: 'date',
+      props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' }
+    },
+    {
+      key: 'comname',
+      label: '部门',
+      type: 'select',
+      props: { placeholder: '请选择部门', options: comnameOptions.value, clearable: true }
+    }
   ])
 
+  // ==================== 5. 构建下拉 (全量版) ====================
+  // 用独立的全量端点（/list, size: 9999）构建部门下拉，避免首屏分页只有 20 行时遗漏
+  // 后续页中才出现的部门。返回的集合是全量的，与分页结果无关。
+  const fetchAllForDropdown = async () => {
+    if (comnameOptions.value.length) return
+    try {
+      const res = await dataReport.axiosRequestJieanlRy({
+        current: 1,
+        size: 9999,
+        tjDate: tableApiParams.value.tjDate || '',
+        comname: tableApiParams.value.comname ?? ''
+      })
+      if (Array.isArray(res) && res.length) {
+        const set = new Set<string>()
+        res.forEach((item) => {
+          if (item.comname) set.add(item.comname)
+        })
+        comnameOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
+        ElNotification({
+          title: '提示',
+          message: `已加载：${comnameOptions.value.length} 个部门`,
+          type: 'success'
+        })
+      }
+    } catch {
+      /* ignore */
+    }
+  }
   const buildDeptOptions = (data: JieanlRyData[]) => {
     if (comnameOptions.value.length) return
     const set = new Set<string>()
-    data.forEach((item) => { if (item.comname) set.add(item.comname) })
-    comnameOptions.value = Array.from(set).sort().map((v) => ({ label: v, value: v }))
-    ElNotification({ title: '提示', message: `已加载：${comnameOptions.value.length} 个部门`, type: 'success' })
+    data.forEach((item) => {
+      if (item.comname) set.add(item.comname)
+    })
+    comnameOptions.value = Array.from(set)
+      .sort()
+      .map((v) => ({ label: v, value: v }))
+    ElNotification({
+      title: '提示',
+      message: `已加载：${comnameOptions.value.length} 个部门`,
+      type: 'success'
+    })
   }
 
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, columns, columnChecks } = useTable({
+  const {
+    data: tableData,
+    loading,
+    error: tableError,
+    pagination,
+    fetchData,
+    refreshData,
+    handleSizeChange,
+    columns,
+    columnChecks
+  } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<JieanlRyData>> => {
         const queryParams = {
-          current: params.current, size: params.size,
+          current: params.current,
+          size: params.size,
           tjDate: tableApiParams.value.tjDate || '',
           comname: tableApiParams.value.comname ?? ''
         }
@@ -134,32 +228,57 @@
         const page = (response ?? {}) as UseTableResult<JieanlRyData>
         const records = page.records || []
         if (records.length) {
-          if (!isInitialized) { buildDeptOptions(records); isInitialized = true }
+          if (!isInitialized) {
+            fetchAllForDropdown()
+            isInitialized = true
+          }
           currentMaxTjTime.value = records[0].maxTjTime || ''
           if (!searchFormState.value.tjDate && records[0].maxTjTime) {
             searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10)
           }
-        } else { currentMaxTjTime.value = '' }
+        } else {
+          currentMaxTjTime.value = ''
+        }
         return { records, total: page.total ?? 0, current: params.current, size: params.size }
       },
       apiParams: tableApiParams.value,
       immediate: true,
       columnsFactory: () => [
-        { prop: 'comname', label: '部门', minWidth: 180, align: 'center', fixed: 'left', sortable: true },
+        {
+          prop: 'comname',
+          label: '部门',
+          minWidth: 180,
+          align: 'center',
+          fixed: 'left',
+          sortable: true
+        },
         { prop: 'username', label: '人员', minWidth: 100, align: 'center', fixed: 'left' },
         { prop: 'hj', label: '汇总', width: 100, align: 'center', sortable: true, fixed: 'right' },
         ...Array.from({ length: 31 }, (_, i) => {
           const n = i + 1
           const day = n < 10 ? `0${n}` : `${n}`
-          return { prop: `day${day}`, label: `${n}号`, width: 70, align: 'center' as const, sortable: true }
+          return {
+            prop: `day${day}`,
+            label: `${n}号`,
+            width: 70,
+            align: 'center' as const,
+            sortable: true
+          }
         })
       ]
     },
-    performance: { enableCache: true, cacheTime: 5 * 60 * 1000, debounceTime: 300, maxCacheSize: 100 }
+    performance: {
+      enableCache: true,
+      cacheTime: 5 * 60 * 1000,
+      debounceTime: 300,
+      maxCacheSize: 100
+    }
   })
 
+  const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
+
   const localHandleCurrentChange = (newCurrent: number) => fetchData({ current: newCurrent })
-  const localHandleSizeChange = (newSize: number) => fetchData({ size: newSize, current: 1 })
+  // const localHandleSizeChange = (newSize: number) => fetchData({ size: newSize, current: 1 })
 
   const handleRefresh = async () => {
     try {
@@ -169,11 +288,17 @@
         currentMaxTjTime.value = res[0].maxTjTime || ''
       }
       await fetchData()
-    } catch { await fetchData() }
+    } catch {
+      await fetchData()
+    }
   }
 
   const handleSearch = async () => {
-    try { await searchBarRef.value?.validate() } catch { return }
+    try {
+      await searchBarRef.value?.validate()
+    } catch {
+      return
+    }
     tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }
     refreshData()
   }
@@ -197,7 +322,10 @@
 
   const handleExportCurrent = () => {
     const data = tableData.value as JieanlRyData[]
-    if (!data.length) { ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' }); return }
+    if (!data.length) {
+      ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' })
+      return
+    }
     const ws = XLSX.utils.json_to_sheet(data.map(exportColumns))
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, SHEET)
@@ -209,16 +337,24 @@
     try {
       const res = await dataReport.axiosRequestJieanlRy(tableApiParams.value)
       const data = (Array.isArray(res) ? res : []) as JieanlRyData[]
-      if (!data.length) { ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' }); return }
+      if (!data.length) {
+        ElNotification({ title: '提示', message: '暂无数据可导出', type: 'warning' })
+        return
+      }
       const ws = XLSX.utils.json_to_sheet(data.map(exportColumns))
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, SHEET)
       XLSX.writeFile(wb, `${SHEET}_全部_${dateSuffix()}.xlsx`)
       ElNotification({ title: '成功', message: `${data.length} 条数据导出成功`, type: 'success' })
-    } catch { ElNotification({ title: '错误', message: '导出失败', type: 'error' }) }
+    } catch {
+      ElNotification({ title: '错误', message: '导出失败', type: 'error' })
+    }
   }
 </script>
 
 <style scoped>
-  :deep(.art-search-bar .el-form-item) { align-items: center; margin-bottom: 0; }
+  :deep(.art-search-bar .el-form-item) {
+    align-items: center;
+    margin-bottom: 0;
+  }
 </style>
