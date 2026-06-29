@@ -419,7 +419,6 @@ export const efficiencyRoutes: AppRouteRecord[] = [
               roles: ['R_ADMIN', 'R_SUPER']
             }
           },
-          },
           {
             path: 'pflbdn_xny',
             name: 'PflbdnXny',

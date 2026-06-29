@@ -124,7 +124,7 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useLaoxiaoTable<RsTjlYearData>({
+  } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestRsTjlYearPage,
     listApi: dataReport.axiosRequestRsTjlYear,
     hasComnameSgs: false,
