@@ -73,7 +73,7 @@
   import { ElNotification } from 'element-plus'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
-  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+  import { useLaoxiaoTable } from '../../api/useLaoxiaoTable'
   import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
 
   defineOptions({ name: 'LisuanMonthTable' })
@@ -143,26 +143,10 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useEfficiencyTable({
+  } = useLaoxiaoTable<LisuanMonthData>({
     pageApi: dataReport.axiosRequestLisuanMonthPage,
-    searchFields: [
-      {
-        key: 'tjDate',
-        label: '统计时间',
-        type: 'date',
-        props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' }
-      },
-      {
-        key: 'comnameSgs',
-        label: '地市公司',
-        type: 'select',
-        props: { placeholder: '请选择地市公司', clearable: true },
-        dropdown: {
-          source: 'comnameSgs',
-          listApi: dataReport.axiosRequestLisuanMonth
-        }
-      }
-    ],
+    listApi: dataReport.axiosRequestLisuanMonth,
+    hasComnameSgs: true,
     columnsFactory: () => [
       {
         prop: 'comnameSgs',

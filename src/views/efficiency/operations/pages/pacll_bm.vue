@@ -58,7 +58,7 @@
         :scrollbar-always-on="true"
         empty-height="660px"
         @pagination:size-change="handleSizeChange"
-        @pagination:current-change="handleCurrentChange"
+        @pagination:current-change="localHandleCurrentChange"
       >
         <template #index="{ $index }">
           <span>{{ $index + 1 + (pagination.current - 1) * pagination.size }}</span>
@@ -125,48 +125,120 @@
 
   // ==================== 4. 状态 ====================
   const searchBarRef = ref<any>(null)
+  const currentMaxTjTime = ref<string>('')
+  let isInitialized = false
+  const comOptions = ref<SelectOption[]>([])
 
-  // ==================== 5. 表格 Hook ====================
+  // ==================== 5. 搜索表单 ====================
+
+  // ==================== 5. 构建下拉 (全量版) ====================
+  // 用独立的全量端点（/list, size: 9999）构建部门下拉，避免首屏分页只有 20 行时遗漏
+  // 后续页中才出现的部门。返回的集合是全量的，与分页结果无关。
+  const fetchAllForDropdown = async () => {
+    if (comOptions.value.length) return
+    try {
+      const res = await dataReport.axiosRequestPacllBm({
+        current: 1,
+        size: 9999,
+        tjDate: tableApiParams.value.tjDate || '',
+        comname: tableApiParams.value.comname ?? ''
+      })
+      if (Array.isArray(res) && res.length) {
+        const set = new Set<string>()
+        res.forEach((item) => {
+          if (item.comname) set.add(item.comname)
+        })
+        comOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
+        ElNotification({
+          title: '提示',
+          message: `已加载：${comOptions.value.length} 个部门`,
+          type: 'success'
+        })
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  const rules = { tjDate: [{ required: false, message: '请选择统计时间', trigger: 'change' }] }
+  const searchFormState = ref({ ...DEFAULT_FORM })
+  const tableApiParams = ref({ ...DEFAULT_PAGINATION, ...searchFormState.value })
+
+  const searchItems = computed(() => [
+    {
+      key: 'tjDate',
+      label: '统计时间',
+      type: 'date',
+      props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' }
+    },
+    {
+      key: 'comname',
+      label: '部门',
+      type: 'select',
+      props: { placeholder: '请选择部门', options: comOptions.value, clearable: true }
+    }
+  ])
+
+  // ==================== 6. 构建下拉 ====================
+  const buildDeptOptions = (data: PacllBmData[]) => {
+    if (comOptions.value.length) return
+    const comSet = new Set<string>()
+    data.forEach((item) => {
+      if (item.comname) comSet.add(item.comname)
+    })
+    comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
+    ElNotification({
+      title: '提示',
+      message: `已加载：${comOptions.value.length} 个部门`,
+      type: 'success'
+    })
+  }
+
+  // ==================== 7. 表格 Hook ====================
   const {
-    searchFormState,
-    searchItems,
-    rules,
-    tableData,
+    data: tableData,
     loading,
-    tableError,
+    error: tableError,
     pagination,
+    fetchData,
     refreshData,
     handleSizeChange,
-    handleCurrentChange,
     columns,
-    columnChecks,
-    currentMaxTjTime,
-    tableApiParams,
-    handleRefresh,
-    handleSearch,
-    handleReset
+    columnChecks
   } = useEfficiencyTable({
-    pageApi: dataReport.axiosRequestPacllBmPage,
-    searchFields: [
-      {
-        key: 'tjDate',
-        label: '统计时间',
-        type: 'date',
-        props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' }
-      },
-      {
-        key: 'comname',
-        label: '部门',
-        type: 'select',
-        props: { placeholder: '请选择部门', clearable: true },
-        dropdown: {
-          source: 'comname',
-          listApi: dataReport.axiosRequestPacllBm,
-          notifyMessage: '个部门'
+    core: {
+      apiFn: async (params: UseTableParams): Promise<UseTableResult<PacllBmData>> => {
+        const queryParams = {
+          current: params.current,
+          size: params.size,
+          tjDate: tableApiParams.value.tjDate || '',
+          comname: tableApiParams.value.comname ?? ''
         }
-      }
-    ],
-    columnsFactory: () => [
+        // 后端 /page 端点直接返回 { records, total, current, size }
+        const response = await dataReport.axiosRequestPacllBmPage(queryParams)
+        const page = (response ?? {}) as UseTableResult<PacllBmData>
+        const records = page.records || []
+        if (records.length) {
+          if (!isInitialized) {
+            fetchAllForDropdown()
+            isInitialized = true
+          }
+          currentMaxTjTime.value = records[0].maxTjTime || ''
+          if (!searchFormState.value.tjDate && records[0].maxTjTime) {
+            searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10)
+          }
+        } else {
+          currentMaxTjTime.value = ''
+        }
+        return {
+          records,
+          total: page.total ?? 0,
+          current: params.current,
+          size: params.size
+        }
+      },
+      apiParams: tableApiParams.value,
+      immediate: true,
+      columnsFactory: () => [
         { prop: 'comcode', label: '部门代码', width: 110, align: 'center', sortable: true },
         {
           prop: 'comname',
@@ -198,11 +270,52 @@
           formatter: (row: any) => formatPercent(row.rsZb)
         }
       ]
+    },
+    performance: {
+      enableCache: true,
+      cacheTime: 5 * 60 * 1000,
+      debounceTime: 300,
+      maxCacheSize: 100
+    }
   })
 
   const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
 
-  // ==================== 8. 导出 ====================
+  // ==================== 8. 操作 ====================
+  const localHandleCurrentChange = (newCurrent: number) => {
+    fetchData({ current: newCurrent })
+  }
+
+  const handleRefresh = async () => {
+    try {
+      const res = await dataReport.axiosRequestPacllBm({ current: 1, size: 9999 })
+      if (Array.isArray(res) && res.length) {
+        buildDeptOptions(res)
+        currentMaxTjTime.value = res[0].maxTjTime || ''
+      }
+      await fetchData()
+    } catch {
+      await fetchData()
+    }
+  }
+
+  const handleSearch = async () => {
+    try {
+      await searchBarRef.value?.validate()
+      tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }
+      refreshData()
+    } catch {
+      /* validation failed */
+    }
+  }
+
+  const handleReset = () => {
+    Object.assign(searchFormState.value, DEFAULT_FORM)
+    tableApiParams.value = { ...DEFAULT_PAGINATION, ...searchFormState.value }
+    refreshData()
+  }
+
+  // ==================== 9. 导出 ====================
   const exportColumns = (item: PacllBmData, index: number) => ({
     序号: index + 1,
     部门代码: item.comcode,

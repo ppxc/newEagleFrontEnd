@@ -64,7 +64,7 @@
   import { useRoute } from 'vue-router'
   import { ElMessage, ElEmpty } from 'element-plus'
   import { workloadTrend } from '../../../api'
-  import WorkloadLineChart from './work_load_line_chart.vue'
+  import WorkloadLineChart from './WorkloadLineChart.vue'
 
   // ============ 类型定义 ============
   interface MonthData {

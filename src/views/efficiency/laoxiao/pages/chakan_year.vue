@@ -73,7 +73,7 @@
   import { ElNotification } from 'element-plus'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
-  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
+  import { useLaoxiaoTable } from '../../api/useLaoxiaoTable'
   import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
 
   defineOptions({ name: 'ChakanYearTable' })
@@ -124,26 +124,10 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useEfficiencyTable({
+  } = useLaoxiaoTable<ChakanYearData>({
     pageApi: dataReport.axiosRequestChakanYearPage,
-    searchFields: [
-      {
-        key: 'tjDate',
-        label: '统计时间',
-        type: 'date',
-        props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' }
-      },
-      {
-        key: 'comnameSgs',
-        label: '地市公司',
-        type: 'select',
-        props: { placeholder: '请选择地市公司', clearable: true },
-        dropdown: {
-          source: 'comnameSgs',
-          listApi: dataReport.axiosRequestChakanYear
-        }
-      }
-    ],
+    listApi: dataReport.axiosRequestChakanYear,
+    hasComnameSgs: true,
     columnsFactory: () => [
       {
         prop: 'comnameSgs',
