@@ -73,7 +73,7 @@
   import { ElNotification } from 'element-plus'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
-  import { useLaoxiaoTable } from '../../api/useLaoxiaoTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
 
   defineOptions({ name: 'DingsunZflMonthTable' })
@@ -143,10 +143,26 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useLaoxiaoTable<DingsunZflMonthData>({
+  } = useEfficiencyTable({
     pageApi: dataReport.axiosRequestDingsunZflMonthPage,
-    listApi: dataReport.axiosRequestDingsunZflMonth,
-    hasComnameSgs: true,
+    searchFields: [
+      {
+        key: 'tjDate',
+        label: '统计时间',
+        type: 'date',
+        props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' }
+      },
+      {
+        key: 'comnameSgs',
+        label: '地市公司',
+        type: 'select',
+        props: { placeholder: '请选择地市公司', clearable: true },
+        dropdown: {
+          source: 'comnameSgs',
+          listApi: dataReport.axiosRequestDingsunZflMonth
+        }
+      }
+    ],
     columnsFactory: () => [
       {
         prop: 'comnameSgs',

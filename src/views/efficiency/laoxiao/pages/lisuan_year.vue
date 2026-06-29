@@ -73,7 +73,7 @@
   import { ElNotification } from 'element-plus'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
-  import { useLaoxiaoTable } from '../../api/useLaoxiaoTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   defineOptions({ name: 'LisuanYearTable' })
 
@@ -103,10 +103,26 @@
     handleSizeChange, handleCurrentChange, columns, columnChecks,
     currentMaxTjTime, tableApiParams,
     handleRefresh, handleSearch, handleReset
-  } = useLaoxiaoTable<LisuanYearData>({
+  } = useEfficiencyTable({
     pageApi: dataReport.axiosRequestLisuanYearPage,
-    listApi: dataReport.axiosRequestLisuanYear,
-    hasComnameSgs: true,
+    searchFields: [
+      {
+        key: 'tjDate',
+        label: '统计时间',
+        type: 'date',
+        props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' }
+      },
+      {
+        key: 'comnameSgs',
+        label: '地市公司',
+        type: 'select',
+        props: { placeholder: '请选择地市公司', clearable: true },
+        dropdown: {
+          source: 'comnameSgs',
+          listApi: dataReport.axiosRequestLisuanYear
+        }
+      }
+    ],
     columnsFactory: () => [
       { prop: 'comnameSgs', label: '地市公司', width: 130, align: 'center', fixed: 'left', sortable: true },
       { prop: 'comname', label: '部门', width: 130, align: 'center', fixed: 'left', sortable: true },
