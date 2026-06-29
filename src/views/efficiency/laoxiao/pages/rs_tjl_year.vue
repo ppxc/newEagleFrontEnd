@@ -73,7 +73,7 @@
   import { ElNotification } from 'element-plus'
   import * as XLSX from 'xlsx'
   import { dataReport } from '../../api'
-  import { useLaoxiaoTable } from '../../api/useLaoxiaoTable'
+  import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
 
   defineOptions({ name: 'RsTjlYearTable' })
@@ -124,10 +124,16 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useLaoxiaoTable<RsTjlYearData>({
+  } = useEfficiencyTable({
     pageApi: dataReport.axiosRequestRsTjlYearPage,
-    listApi: dataReport.axiosRequestRsTjlYear,
-    hasComnameSgs: false,
+    searchFields: [
+      {
+        key: 'tjDate',
+        label: '统计时间',
+        type: 'date',
+        props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' }
+      }
+    ],
     columnsFactory: () => [
       {
         prop: 'comname',
