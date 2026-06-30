@@ -160,18 +160,23 @@ export function useLaoxiaoTable(opts: UseLaoxiaoTableOptions) {
   // ==================== 操作 ====================
 
   /**
-   * 分页大小变化：直接更新 tableApiParams，清缓存，然后调用 fetchData
-   * 让 apiFn 收到正确的 current/size 参数。
+   * 分页大小变化：先同步刷新 pagination，再 fetchData
+   * 与 full/useTable 原生 handler 保持一致——ElPagination 立刻看到新 size
    */
   const handleSizeChange = async (newSize: number) => {
+    if (newSize <= 0) return
+    ;(pagination as { size: number; current: number }).size = newSize
+    ;(pagination as { size: number; current: number }).current = 1
     tableApiParams.value.current = 1
     tableApiParams.value.size = newSize
     clearCache(CacheInvalidationStrategy.CLEAR_CURRENT, '分页大小变化')
     await fetchData({ current: 1, size: newSize })
   }
 
-  /** 当前页变化：直接调用 fetchData，传入新的 current */
+  /** 当前页变化：先同步刷新 pagination.current，再 fetchData */
   const handleCurrentChange = async (newCurrent: number) => {
+    if (newCurrent <= 0) return
+    ;(pagination as { size: number; current: number }).current = newCurrent
     tableApiParams.value.current = newCurrent
     await fetchData({ current: newCurrent })
   }
