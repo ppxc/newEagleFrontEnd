@@ -143,7 +143,7 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useLaoxiaoTable<DingsunTjlMonthData>({
+  } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestDingsunTjlMonthPage,
     listApi: dataReport.axiosRequestDingsunTjlMonth,
     hasComnameSgs: true,

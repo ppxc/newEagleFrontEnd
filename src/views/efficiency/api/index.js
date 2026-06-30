@@ -276,6 +276,10 @@ export const dataReport = {
   axiosRequestLingjieRyPage(params) {
     return request.get({ url: '/zyxt/api/lingjie_ry/page', params })
   },
+  /** 零结案-小组（合成：bm + groups + zxzt） */
+  axiosRequestLingjieGroup(params) {
+    return request.get({ url: '/zyxt/api/lingjie_group/list', params })
+  },
   /** 未决存量-案件类型 */
   axiosRequestWjxs(params) {
     return request.get({ url: '/zyxt/api/wjxs/list', params })

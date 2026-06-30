@@ -124,7 +124,7 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useLaoxiaoTable<DingsunTjlYearData>({
+  } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestDingsunTjlYearPage,
     listApi: dataReport.axiosRequestDingsunTjlYear,
     hasComnameSgs: true,

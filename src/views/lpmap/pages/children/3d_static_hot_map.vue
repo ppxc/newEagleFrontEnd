@@ -6,13 +6,7 @@
         <!-- 统计卡片部分 - 与控制按钮在同一样式容器内 -->
         <div class="stats-cards-top">
           <ElRow :gutter="10">
-            <ElCol
-              :xs="24"
-              :sm="12"
-              :md="6"
-              v-for="card in statsCards"
-              :key="card.id"
-            >
+            <ElCol :xs="24" :sm="12" :md="6" v-for="card in statsCards" :key="card.id">
               <div class="card-wrapper">
                 <div
                   class="art-card flex-c px-4 transition-transform duration-200 hover:-translate-y-0.5"
@@ -80,15 +74,22 @@
           :class="{ active: showAbnormal }"
           @click="showAbnormal = !showAbnormal"
           title="显示/隐藏异常高亮点（count > μ+2σ）"
-          style="top: 50px;"
+          style="top: 50px"
         >
           <ArtSvgIcon icon="ri:alert-line" />
         </div>
         <!-- 异常点详情面板（点击 marker 时显示，与汛期驾驶舱停车场面板同款） -->
         <div v-if="abnormalSelected" class="abnormal-detail-panel">
           <div class="abnormal-detail-header">
-            <span class="abnormal-detail-title">异常高值区域</span>
-            <div class="abnormal-detail-close" title="关闭" @click.stop="abnormalSelected = null">✕</div>
+            <span
+              class="abnormal-detail-title"
+              :style="{ color: severityColor[abnormalSelected.severity] || '#ff4d4f' }"
+            >
+              {{ severityLabel[abnormalSelected.severity] || '异常高值区域' }}
+            </span>
+            <div class="abnormal-detail-close" title="关闭" @click.stop="abnormalSelected = null"
+              >✕</div
+            >
           </div>
           <div class="abnormal-detail-body">
             <div class="detail-row">
@@ -104,7 +105,7 @@
               <span class="detail-value text-red-500 font-bold">{{ abnormalSelected.count }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">阈值</span>
+              <span class="detail-label">判定规则</span>
               <span class="detail-value">{{ abnormalSelected.threshold }}</span>
             </div>
           </div>
@@ -121,7 +122,7 @@
 
 <script setup lang="ts">
   import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
-  import { useSettingStore } from '@stores/modules/setting'
+  // import { useSettingStore } from '@stores/modules/setting'
   import { AdministrativeRegionManager } from '../../api/administrative_regionmanager'
   import { ElRow, ElCol } from 'element-plus'
   import { hotmap } from '../../api'
@@ -148,36 +149,73 @@
   // SVG data URI 生成工具（与 user-map.vue 保持一致）
   const toSvgDataUri = (svg: string, color: string) =>
     `data:image/svg+xml;utf8,${encodeURIComponent(
-      svg
-        .replace(/\n\s*/g, ' ')
-        .replace(/<svg /, `<svg style="color:${color}" `)
+      svg.replace(/\n\s*/g, ' ').replace(/<svg /, `<svg style="color:${color}" `)
     )}`
 
-  // 警告图标：红色三角中间白色感叹号
-  const warningIcon = toSvgDataUri(
+  // 警告图标：红色三角（stat - 统计显著异常）
+  const warningIconRed = toSvgDataUri(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
       <polygon points="16,2 30,28 2,28" fill="#ff4d4f" stroke="#cc0000" stroke-width="1"/>
       <text x="16" y="24" text-anchor="middle" font-size="18" font-weight="bold" fill="#fff" font-family="Arial">!</text>
     </svg>`,
     '#fff'
   )
+  // 业务兜底图标：橙色三角（topk - top-K 强制关注点）
+  const warningIconOrange = toSvgDataUri(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">
+      <polygon points="14,2 26,24 2,24" fill="#fa8c16" stroke="#d46b08" stroke-width="1"/>
+      <text x="14" y="21" text-anchor="middle" font-size="16" font-weight="bold" fill="#fff" font-family="Arial">!</text>
+    </svg>`,
+    '#fff'
+  )
+  // 轻微异常图标：蓝色圆 i（watch - 参考提示）
+  const infoIconBlue = toSvgDataUri(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+      <circle cx="12" cy="12" r="11" fill="#1890ff" stroke="#096dd9" stroke-width="1"/>
+      <text x="12" y="17" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff" font-family="Arial">i</text>
+    </svg>`,
+    '#fff'
+  )
+  // 向后兼容：保留旧 warningIcon 引用
+  // const warningIcon = warningIconRed
 
   // 状态
-  const isDistrictsVisible = computed(() => administrativeRegionManager?.showingDistricts.value ?? false)
+  const isDistrictsVisible = computed(
+    () => administrativeRegionManager?.showingDistricts.value ?? false
+  )
   const loading = ref(true)
   const error = ref('')
   // 异常高亮点开关
   const showAbnormal = ref(true)
-  // 当前选中的异常点
-  const abnormalSelected = ref<{ lng: number; lat: number; count: number; threshold: string } | null>(null)
+  // 当前选中的异常点（severity: stat/topk/watch）
+  const abnormalSelected = ref<{
+    lng: number
+    lat: number
+    count: number
+    threshold: string
+    severity: string
+  } | null>(null)
+
+  // severity 显示文案映射
+  const severityLabel: Record<string, string> = {
+    stat: '统计显著异常',
+    topk: '业务热点（top-K 兜底）',
+    watch: '轻微异常（参考）'
+  }
+  // severity 颜色映射（与图标颜色一致）
+  const severityColor: Record<string, string> = {
+    stat: '#ff4d4f',
+    topk: '#fa8c16',
+    watch: '#1890ff'
+  }
 
   // 主题色：跟随系统设置切换
-  const settingStore = useSettingStore()
-  const isDark = computed(() => settingStore.isDark)
-  const infoWindowBg = computed(() => isDark.value ? '#1f2937' : '#ffffff')
-  const infoWindowText = computed(() => isDark.value ? '#e5e7eb' : '#374151')
-  const infoWindowLabel = computed(() => isDark.value ? '#9ca3af' : '#6b7280')
-  const infoWindowAccent = computed(() => '#ff4d4f')
+  // const settingStore = useSettingStore()
+  // const isDark = computed(() => settingStore.isDark)
+  // const infoWindowBg = computed(() => (isDark.value ? '#1f2937' : '#ffffff'))
+  // const infoWindowText = computed(() => (isDark.value ? '#e5e7eb' : '#374151'))
+  // const infoWindowLabel = computed(() => (isDark.value ? '#9ca3af' : '#6b7280'))
+  // const infoWindowAccent = computed(() => '#ff4d4f')
 
   // 进度追踪
   const progressPercent = ref(0)
@@ -238,10 +276,7 @@
       // 空值保护：后端可能返回 null / undefined / 空数组
       // （例如当天没有统计数据、或者 axios 解包失败）
       if (!Array.isArray(data) || data.length === 0) {
-        console.warn(
-          '[fetchStatsCardsData] 接口返回空数据，保持卡片默认显示。date=',
-          params.date
-        )
+        console.warn('[fetchStatsCardsData] 接口返回空数据，保持卡片默认显示。date=', params.date)
         return
       }
 
@@ -411,12 +446,6 @@
     }
   }
 
-  const hideDistricts = async () => {
-    if (administrativeRegionManager) {
-      await administrativeRegionManager.hideDistricts()
-    }
-  }
-
   // ==================== 初始化地图 ====================
   const initMap = async () => {
     try {
@@ -492,10 +521,18 @@
       return
     }
 
-    const abnormalData = data.filter((d: any) => d.abnormal)
+    // 过滤：severity 字段（stat/topk/watch） OR 旧 abnormal 字段（向后兼容）
+    const abnormalData = data.filter((d: any) => {
+      const sev = d.severity
+      if (sev && (sev === 'stat' || sev === 'topk' || sev === 'watch')) return true
+      return d.abnormal === true
+    })
     console.log('[renderAbnormalMarkers] 异常数据点:', abnormalData)
     if (!abnormalData.length || !map) {
-      console.log('[renderAbnormalMarkers] 跳过：数据为空或map未就绪', { abnormalLen: abnormalData.length, mapReady: !!map })
+      console.log('[renderAbnormalMarkers] 跳过：数据为空或map未就绪', {
+        abnormalLen: abnormalData.length,
+        mapReady: !!map
+      })
       return
     }
 
@@ -503,19 +540,43 @@
       id: 'abnormal-layer',
       map,
       styles: {
+        stat: new window.TMap.MarkerStyle({
+          width: 32,
+          height: 32,
+          anchor: { x: 16, y: 32 },
+          src: warningIconRed
+        }),
+        topk: new window.TMap.MarkerStyle({
+          width: 28,
+          height: 28,
+          anchor: { x: 14, y: 28 },
+          src: warningIconOrange
+        }),
+        watch: new window.TMap.MarkerStyle({
+          width: 24,
+          height: 24,
+          anchor: { x: 12, y: 24 },
+          src: infoIconBlue
+        }),
+        // 向后兼容：未识别 severity 时用红色三角
         abnormal: new window.TMap.MarkerStyle({
           width: 32,
           height: 32,
           anchor: { x: 16, y: 32 },
-          src: warningIcon
+          src: warningIconRed
         })
       },
-      geometries: abnormalData.map((d: any, idx: number) => ({
-        id: `abnormal-${idx}`,
-        styleId: 'abnormal',
-        position: new window.TMap.LatLng(d.lat, d.lng),
-        properties: { count: d.count }
-      }))
+      geometries: abnormalData.map((d: any, idx: number) => {
+        const sev = d.severity
+        // 只用 3 种合法 severity 之一，否则降级到 'abnormal' style（红色）
+        const styleId = sev === 'stat' || sev === 'topk' || sev === 'watch' ? sev : 'abnormal'
+        return {
+          id: `abnormal-${idx}`,
+          styleId,
+          position: new window.TMap.LatLng(d.lat, d.lng),
+          properties: { count: d.count, severity: sev || 'stat' }
+        }
+      })
     })
 
     abnormalMarkerLayer.on('click', (e: any) => {
@@ -524,16 +585,24 @@
       suppressMapClick = true
       const { lat, lng } = e.geometry.position
       const count = e.geometry.properties?.count ?? 0
-      abnormalSelected.value = { lng, lat, count, threshold: '> μ+2σ' }
-      setTimeout(() => { suppressMapClick = false }, 0)
+      const severity = e.geometry.properties?.severity ?? 'stat'
+      // threshold 文案按 severity 区分
+      const thresholdMap: Record<string, string> = {
+        stat: '|modified z| > 1.3',
+        topk: 'top-K 兜底（K_min=' + (typeof window !== 'undefined' ? '1' : '1') + '）',
+        watch: '1.0 < |modified z| ≤ 1.3'
+      }
+      abnormalSelected.value = {
+        lng,
+        lat,
+        count,
+        threshold: thresholdMap[severity] || '> μ+2σ',
+        severity
+      }
+      setTimeout(() => {
+        suppressMapClick = false
+      }, 0)
     })
-  }
-
-  // 切换异常高亮显示/隐藏
-  const toggleAbnormalMarkers = (show: boolean) => {
-    if (abnormalMarkerLayer) {
-      abnormalMarkerLayer.setMap(show ? map : null)
-    }
   }
 
   // showAbnormal 变化时：开关图层可见性；如果图层还没创建则立即用当前数据渲染
@@ -792,24 +861,30 @@
     top: 100px;
     left: 12px;
     width: 280px;
-    background: var(--fs-bg-panel, rgba(255,255,255,0.97));
-    border: 1px solid var(--fs-border-color, rgba(0,0,0,0.08));
+    background: var(--fs-bg-panel, rgba(255, 255, 255, 0.97));
+    border: 1px solid var(--fs-border-color, rgba(0, 0, 0, 0.08));
     border-radius: 10px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     z-index: 1000;
     pointer-events: auto;
     animation: abnormal-detail-in 0.2s ease-out;
   }
   @keyframes abnormal-detail-in {
-    from { opacity: 0; transform: translateX(20px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
   .abnormal-detail-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 12px 14px 10px;
-    border-bottom: 1px solid var(--fs-border-color, rgba(0,0,0,0.08));
+    border-bottom: 1px solid var(--fs-border-color, rgba(0, 0, 0, 0.08));
   }
   .abnormal-detail-title {
     font-size: 14px;
@@ -830,7 +905,7 @@
     flex-shrink: 0;
   }
   .abnormal-detail-close:hover {
-    background: rgba(0,0,0,0.06);
+    background: rgba(0, 0, 0, 0.06);
     color: #ef4444;
   }
   .abnormal-detail-body {

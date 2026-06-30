@@ -132,6 +132,16 @@ export const efficiencyRoutes: AppRouteRecord[] = [
             }
           },
           {
+            path: 'wjxs',
+            name: 'Wjxs',
+            component: '/efficiency/operations/pages/wjxs',
+            meta: {
+              title: '未决存量-案件类型',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
             path: 'jieanl_bm',
             name: 'JieanlBm',
             component: '/efficiency/operations/pages/jieanl_bm',
@@ -208,6 +218,16 @@ export const efficiencyRoutes: AppRouteRecord[] = [
             component: '/efficiency/operations/pages/lingjie_ry',
             meta: {
               title: '零结案-人员',
+              keepAlive: false,
+              roles: ['R_ADMIN', 'R_SUPER']
+            }
+          },
+          {
+            path: 'lingjie_group',
+            name: 'LingjieGroup',
+            component: '/efficiency/operations/pages/lingjie_group',
+            meta: {
+              title: '零结案-小组',
               keepAlive: false,
               roles: ['R_ADMIN', 'R_SUPER']
             }
