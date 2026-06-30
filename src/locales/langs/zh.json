@@ -251,6 +251,22 @@
       "personalmap": "实时人员分布",
       "hotmap": "案件量热图"
     },
+    "home": {
+      "title": "首页",
+      "console": "工作台",
+      "cards": {
+        "task": "今日任务",
+        "check": "今日查勘量",
+        "case": "本月案件数",
+        "alert": "当前预警"
+      },
+      "activeUser": "部门工作量趋势",
+      "salesOverview": "全年访问趋势",
+      "newUser": "查勘员排行",
+      "dynamic": "系统动态",
+      "todo": "待办事项",
+      "about": "关于系统"
+    },
     "management": {
       "title": "数智平台",
       "carCockpit": "车险可视化平台",

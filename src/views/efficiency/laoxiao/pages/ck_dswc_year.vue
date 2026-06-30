@@ -124,7 +124,7 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useLaoxiaoTable<CkDswcYearData>({
+  } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestCkDswcYearPage,
     listApi: dataReport.axiosRequestCkDswcYear,
     hasComnameSgs: true,

@@ -123,7 +123,7 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useLaoxiaoTable<RsGzlYearData>({
+  } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestRsGzlYearPage,
     listApi: dataReport.axiosRequestRsGzlYear,
     hasComnameSgs: false,

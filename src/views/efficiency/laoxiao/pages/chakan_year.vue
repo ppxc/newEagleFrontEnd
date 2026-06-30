@@ -124,7 +124,7 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useLaoxiaoTable<ChakanYearData>({
+  } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestChakanYearPage,
     listApi: dataReport.axiosRequestChakanYear,
     hasComnameSgs: true,

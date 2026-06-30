@@ -143,7 +143,7 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useLaoxiaoTable<ChakanMonthData>({
+  } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestChakanMonthPage,
     listApi: dataReport.axiosRequestChakanMonth,
     hasComnameSgs: true,

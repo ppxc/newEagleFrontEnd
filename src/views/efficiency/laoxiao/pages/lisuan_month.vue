@@ -143,7 +143,7 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useLaoxiaoTable<LisuanMonthData>({
+  } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestLisuanMonthPage,
     listApi: dataReport.axiosRequestLisuanMonth,
     hasComnameSgs: true,

@@ -143,7 +143,7 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useLaoxiaoTable<RsTjlMonthData>({
+  } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestRsTjlMonthPage,
     listApi: dataReport.axiosRequestRsTjlMonth,
     hasComnameSgs: false,

@@ -143,7 +143,7 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useLaoxiaoTable<DingsunWclMonthData>({
+  } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestDingsunWclMonthPage,
     listApi: dataReport.axiosRequestDingsunWclMonth,
     hasComnameSgs: true,

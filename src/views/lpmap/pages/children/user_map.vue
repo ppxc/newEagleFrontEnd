@@ -272,7 +272,7 @@
   }
 
   // 类型定义
-  type AdministrativeRegionManagerType = InstanceType<typeof AdministrativeRegionManager>
+  // type AdministrativeRegionManagerType = InstanceType<typeof AdministrativeRegionManager>
 
   // 腾讯地图api key
 
@@ -413,18 +413,6 @@
   const toggleDistricts = () => {
     if (administrativeRegionManager) {
       administrativeRegionManager.toggleDistricts()
-    }
-  }
-
-  const showDistricts = async () => {
-    if (administrativeRegionManager) {
-      await administrativeRegionManager.showDistricts()
-    }
-  }
-
-  const hideDistricts = async () => {
-    if (administrativeRegionManager) {
-      await administrativeRegionManager.hideDistricts()
     }
   }
 
