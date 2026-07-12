@@ -176,6 +176,14 @@
     </svg>`,
     '#fff'
   )
+  // 区域极大值图标：蓝色三角（regionMax - 级联 Step 2）
+  const warningIconBlueTriangle = toSvgDataUri(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">
+      <polygon points="14,2 26,24 2,24" fill="#1890ff" stroke="#096dd9" stroke-width="1"/>
+      <text x="14" y="21" text-anchor="middle" font-size="16" font-weight="bold" fill="#fff" font-family="Arial">!</text>
+    </svg>`,
+    '#fff'
+  )
   // 向后兼容：保留旧 warningIcon 引用
   // const warningIcon = warningIconRed
 
@@ -200,12 +208,14 @@
   const severityLabel: Record<string, string> = {
     stat: '统计显著异常',
     topk: '业务热点（top-K 兜底）',
-    watch: '轻微异常（参考）'
+    regionMax: '区域极大值（级联 Step 2）',
+    watch: '轻微异常（参考，仅 median+MAD 旧算法使用）'
   }
   // severity 颜色映射（与图标颜色一致）
   const severityColor: Record<string, string> = {
     stat: '#ff4d4f',
     topk: '#fa8c16',
+    regionMax: '#1890ff',
     watch: '#1890ff'
   }
 
@@ -552,6 +562,12 @@
           anchor: { x: 14, y: 28 },
           src: warningIconOrange
         }),
+        regionMax: new window.TMap.MarkerStyle({
+          width: 28,
+          height: 28,
+          anchor: { x: 14, y: 28 },
+          src: warningIconBlueTriangle
+        }),
         watch: new window.TMap.MarkerStyle({
           width: 24,
           height: 24,
@@ -568,8 +584,11 @@
       },
       geometries: abnormalData.map((d: any, idx: number) => {
         const sev = d.severity
-        // 只用 3 种合法 severity 之一，否则降级到 'abnormal' style（红色）
-        const styleId = sev === 'stat' || sev === 'topk' || sev === 'watch' ? sev : 'abnormal'
+        // 只用 4 种合法 severity 之一，否则降级到 'abnormal' style（红色）
+        const styleId =
+          sev === 'stat' || sev === 'topk' || sev === 'regionMax' || sev === 'watch'
+            ? sev
+            : 'abnormal'
         return {
           id: `abnormal-${idx}`,
           styleId,
@@ -588,9 +607,10 @@
       const severity = e.geometry.properties?.severity ?? 'stat'
       // threshold 文案按 severity 区分
       const thresholdMap: Record<string, string> = {
-        stat: '|modified z| > 1.3',
-        topk: 'top-K 兜底（K_min=' + (typeof window !== 'undefined' ? '1' : '1') + '）',
-        watch: '1.0 < |modified z| ≤ 1.3'
+        stat: 'P95 集群主导比 > 0.4',
+        regionMax: '区域极大值主导比 > 0.4',
+        topk: 'top-K 兜底（K=8）',
+        watch: '|modified z| > 1.3'
       }
       abnormalSelected.value = {
         lng,
