@@ -60,6 +60,22 @@
                   :icon="isMapFullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-line'"
                 />
               </div>
+              <div class="map-date-picker">
+                <ArtSvgIcon icon="ri:calendar-line" class="map-date-icon" />
+                <el-date-picker
+                  v-model="dateRange"
+                  type="daterange"
+                  range-separator="至"
+                  start-placeholder="起始日"
+                  end-placeholder="截止日"
+                  format="YYYY-MM-DD"
+                  value-format="YYYY-MM-DD"
+                  :clearable="false"
+                  :editable="false"
+                  size="small"
+                  @change="onDateRangeChange"
+                />
+              </div>
             </div>
             <!-- 当前预警措施浮窗（地图左下角） -->
             <div class="flood-place-panel" :class="{ collapsed: isPlacePanelCollapsed }">
@@ -92,6 +108,34 @@
                       </div>
                     </template>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 热力点详情面板（点击热力 marker 时显示） -->
+            <div v-if="selectedHeatPoint" class="heat-point-detail-panel">
+              <div class="heat-point-detail-header">
+                <span class="heat-point-detail-title">事故点详情</span>
+                <span class="heat-point-detail-close" title="关闭" @click="selectedHeatPoint = null"
+                  >✕</span
+                >
+              </div>
+              <div class="heat-point-detail-body">
+                <div class="detail-row">
+                  <span class="detail-label">报表日期</span>
+                  <span class="detail-value">{{ selectedHeatPoint.reportDate || '—' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">出险地址</span>
+                  <span class="detail-value" :title="selectedHeatPoint.damageAddress">
+                    {{ selectedHeatPoint.damageAddress || '—' }}
+                  </span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">查勘地址</span>
+                  <span class="detail-value" :title="selectedHeatPoint.checkAddress">
+                    {{ selectedHeatPoint.checkAddress || '—' }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -330,7 +374,7 @@
 
 <script setup lang="ts">
   import { onMounted, onBeforeUnmount, ref, computed, nextTick, watch } from 'vue'
-  import { ElRow, ElCol, ElTabs, ElTabPane, ElTable, ElTableColumn } from 'element-plus'
+  import { ElTabs, ElTabPane } from 'element-plus'
   import { MapLoader } from '../../lpmap/api/map_loader'
   import { AdministrativeRegionManager } from '../../lpmap/api/administrative_regionmanager'
   import { useAutoLayoutHeight } from '@/hooks/core/useLayoutHeight'
@@ -406,6 +450,10 @@
     lat: number
     lng: number
     count: number
+    // 原始事故点详情(由 /api/rain/hotPoints 返回)
+    reportDate?: string
+    damageAddress?: string
+    checkAddress?: string
   }
 
   // ==================== 列表（直接展示后端原数据） ====================
@@ -514,11 +562,24 @@
   })
 
   // ==================== 停车场数据（地图 marker） ====================
+  // 当前未渲染停车场 marker,但保留 ref 以备将来恢复显示
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const pendingPlaces = ref<CarPlace[]>([])
 
   // ==================== 浮窗状态 ====================
   const isPlacePanelCollapsed = ref(false)
   const isMapFullscreen = ref(false)
+
+  // ==================== 地图点日期范围筛选 ====================
+  /** 起止日期,默认近 7 天(含今天)。仅影响地图热力点,不联动右侧报表 / 顶部滚动。 */
+  const defaultDateRange = (): [string, string] => {
+    const end = new Date()
+    const start = new Date()
+    start.setDate(end.getDate() - 6)
+    const fmt = (d: Date) => d.toISOString().slice(0, 10)
+    return [fmt(start), fmt(end)]
+  }
+  const dateRange = ref<[string, string]>(defaultDateRange())
 
   // ==================== 选中的停车场（点击 marker 后显示详情） ====================
   const selectedPlace = ref<CarPlace | null>(null)
@@ -526,6 +587,13 @@
   // ==================== 地图 ====================
   const mapLoading = ref(true)
   let map: any = null
+  // 热力点 marker layer(替代原 Heat 热力色块)
+  let heatMarkerLayer: any = null
+  // 热力点 marker 数据(待地图就绪后渲染)
+  const pendingHeatPoints = ref<HeatDataPoint[]>([])
+  // 当前选中的热力点(点击 marker 后弹详情)
+  const selectedHeatPoint = ref<HeatDataPoint | null>(null)
+  // 停车场 marker layer(当前隐藏,代码保留便于恢复)
   let markerLayer: any = null
   let regionManager: AdministrativeRegionManager | null = null
   let heat: any = null
@@ -550,16 +618,17 @@
   // ==================== 拉取所有非地图数据 ====================
   const fetchAll = async () => {
     try {
-      const [dayLevels, places, z, r, l, it, lp, cd, rt] = await Promise.all([
+      const [dayLevels, /* places, */ z, r, l, it, lp, cd, rt, hp] = await Promise.all([
         RainCockpit.getDayLevels() as Promise<DayLevel[]>,
-        RainCockpit.getCarPlaces() as Promise<CarPlace[]>,
+        // RainCockpit.getCarPlaces() as Promise<CarPlace[]>,  // 暂隐藏停车场 marker(代码保留)
         RainCockpit.getZhibans() as Promise<Zhiban[]>,
         RainCockpit.getRepairs() as Promise<Repair[]>,
         RainCockpit.getLianluos() as Promise<Lianluo[]>,
         RainCockpit.getItems() as Promise<Item[]>,
         RainCockpit.getLevelProcesses() as Promise<LevelProcess[]>,
         RainCockpit.getCardData() as Promise<CardData>,
-        RainCockpit.getReportTable() as Promise<CardData[]>
+        RainCockpit.getReportTable() as Promise<CardData[]>,
+        RainCockpit.getHotPoints() as Promise<HeatDataPoint[]>
       ])
 
       // 滚动文字
@@ -587,11 +656,15 @@
       // 数据报表
       reportTableData.value = rt || []
 
-      // 暂存停车点位，等地图就绪后渲染（修复竞态）
-      pendingPlaces.value = places || []
-      if (map) renderMarkers(pendingPlaces.value)
+      // 暂存停车点位,等地图就绪后渲染(修复竞态)
+      // pendingPlaces.value = places || []  // 暂隐藏停车场 marker
+      // if (map) renderMarkers(pendingPlaces.value)
+
+      // 暂存热力点,等地图就绪后渲染(每个事故点 → 一个 marker,按密度着色)
+      pendingHeatPoints.value = hp || []
+      if (map) renderHeatMarkers(pendingHeatPoints.value)
     } catch (err) {
-      console.error('[汛期驾驶舱] 数据拉取失败：', err)
+      console.error('[汛期驾驶舱] 数据拉取失败:', err)
     }
   }
 
@@ -687,21 +760,76 @@
       regionManager = new AdministrativeRegionManager(map)
       await regionManager.showDistricts()
 
-      // 初始化热力图层（数据为占位，接口待定）
-      initHeatMap()
-      refreshHeatMap()
+      // 渲染热力点 marker(每个事故点一个,按密度着色)
+      if (pendingHeatPoints.value.length) renderHeatMarkers(pendingHeatPoints.value)
 
-      // 地图就绪后再渲染 marker（若数据已回来）
-      if (pendingPlaces.value.length) renderMarkers(pendingPlaces.value)
+      // 渲染停车场 marker(当前隐藏)
+      // if (pendingPlaces.value.length) renderMarkers(pendingPlaces.value)
 
       mapLoading.value = false
     } catch (err: any) {
-      console.error('地图加载失败：', err)
+      console.error('地图加载失败:', err)
       mapLoading.value = false
     }
   }
+  // ==================== 日期范围变化:仅刷新地图点 ====================
+  /** 用户在 toolbar 改了日期范围:只重拉 /hotPoints 并重新渲染 marker。
+   *  不影响其他面板(右侧报表、顶部滚动、卡片)。 */
+  const onDateRangeChange = async (val: [string, string] | null) => {
+    if (!val || !val[0] || !val[1]) {
+      // 清空日期:回到全量(行为等同于首屏)
+      try {
+        const points = (await RainCockpit.getHotPoints()) as HeatDataPoint[]
+        pendingHeatPoints.value = points || []
+        if (map) renderHeatMarkers(pendingHeatPoints.value)
+      } catch (err) {
+        console.error('[汛期驾驶舱] 清空日期后回到全量失败:', err)
+      }
+      return
+    }
+    console.log('[汛期驾驶舱] onDateRangeChange 触发:', val)
+    try {
+      // 后端 /hotPoints 仅接受单日期,所以按天循环调用并合并
+      const dates = expandDateRange(val[0], val[1])
+      console.log('[汛期驾驶舱] 展开日期:', dates)
+      const results = await Promise.all(
+        dates.map((d) => RainCockpit.getHotPointsByDate(d) as Promise<HeatDataPoint[]>)
+      )
+      // http 拦截器已解包 Result.data,所以 results 直接是数据数组
+      const merged: HeatDataPoint[] = []
+      for (const arr of results) {
+        if (Array.isArray(arr)) merged.push(...arr)
+      }
+      pendingHeatPoints.value = merged
+      if (map) renderHeatMarkers(merged)
+      if (merged.length === 0) {
+        ElMessage.warning(`所选日期范围(${val[0]} ~ ${val[1]})暂无事故点数据`)
+      } else {
+        console.log('[汛期驾驶舱] 日期范围', val[0], '至', val[1], '事故点', merged.length, '个')
+      }
+    } catch (err) {
+      console.error('[汛期驾驶舱] 按日期范围拉取事故点失败:', err)
+    }
+  }
+
+  /** 展开 [start, end] 到每日字符串数组(YYYY-MM-DD)。 */
+  const expandDateRange = (start: string, end: string): string[] => {
+    const out: string[] = []
+    const s = new Date(start)
+    const e = new Date(end)
+    const cur = new Date(s)
+    while (cur <= e) {
+      out.push(cur.toISOString().slice(0, 10))
+      cur.setDate(cur.getDate() + 1)
+    }
+    return out
+  }
+
+
 
   // ==================== 渲染停车点位 ====================
+  // 当前未调用,但保留函数以备将来恢复显示
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const renderMarkers = (places: CarPlace[]) => {
     if (!map || !window.TMap) return
     const valid = places.filter((p) => p.longitudeNew && p.latitudeNew)
@@ -750,37 +878,78 @@
     map.fitBounds(bounds, { padding: 60 })
   }
 
-  // ==================== 热力图 ====================
-  const initHeatMap = () => {
-    if (!map || !window.TMap?.visualization?.Heat) return
-    heat = new window.TMap.visualization.Heat({
-      max: 20,
-      min: 0,
-      height: 60,
-      radius: 30,
-      transitAnimation: { duration: 3000 }
-    }).addTo(map)
+  // ==================== 热力点 marker 渲染 ====================
+  /**
+   * 把每个事故点画成 marker,按 color 档位上色(0=蓝 1=黄 2=橙 3=红 4=深红)。
+   * 使用 TMap.MultiMarker 批量渲染,4k+ 个点浏览器可承受。
+   */
+  const renderHeatMarkers = (points: HeatDataPoint[]) => {
+    console.log('[FloodSeason] renderHeatMarkers called, points=', points.length, 'map?', !!map, 'TMap?', !!window.TMap)
+    if (!map || !window.TMap) {
+      console.warn('[FloodSeason] map or TMap not ready, abort')
+      return
+    }
+    // 1. 总是先清理旧 layer(包括 heat layer)
+    if (heatMarkerLayer) {
+      heatMarkerLayer.setMap(null)
+      heatMarkerLayer = null
+    }
+    if (heat && typeof heat.setMap === 'function') {
+      heat.setMap(null)
+      heat = null
+    }
+
+    // 2. 过滤有效数据
+    const valid = points.filter((p) => typeof p.lat === 'number' && typeof p.lng === 'number')
+    console.log('[FloodSeason] valid points=', valid.length)
+
+    if (valid.length === 0) {
+      console.log('[FloodSeason] 无有效数据,marker 已清空')
+      return
+    }
+
+    // 3. 创建新的 MultiMarker
+    const geometries = valid.map((p, idx) => ({
+      id: 'heat-' + idx,
+      styleId: 'incident-pin',
+      position: new window.TMap.LatLng(p.lat, p.lng),
+      properties: { data: p }
+    }))
+
+    const styles = {
+      'incident-pin': new window.TMap.MarkerStyle({
+        width: 26,
+        height: 32,
+        anchor: { x: 13, y: 32 },
+        src: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120"><circle cx="50" cy="42" r="35" fill="#dc2626" stroke="#fff" stroke-width="3"/><circle cx="50" cy="42" r="22" fill="white"/><text x="50" y="50" font-family="Arial" font-size="28" font-weight="bold" text-anchor="middle" fill="#dc2626">!</text><polygon points="50,80 36,110 64,110" fill="#dc2626"/></svg>')
+      })
+    }
+
+    heatMarkerLayer = new window.TMap.MultiMarker({
+      map: map,
+      styles: styles,
+      geometries: geometries
+    })
+
+    heatMarkerLayer.on('click', (evt: any) => {
+      evt?.originalEvent?.stopPropagation?.()
+      evt?.stopPropagation?.()
+      const point = evt.geometry?.properties?.data
+      if (point) {
+        suppressMapClick = true
+        selectedHeatPoint.value = point
+        setTimeout(() => { suppressMapClick = false }, 0)
+      }
+    })
+
+    // 自适应视野
+    const bounds = new window.TMap.LatLngBounds()
+    valid.forEach((p) => bounds.extend(new window.TMap.LatLng(p.lat, p.lng)))
+    map.fitBounds(bounds, { padding: 60 })
+
+    console.log('[FloodSeason] marker rendered, total=', valid.length)
   }
 
-  const refreshHeatMap = async () => {
-    if (!heat) return
-    try {
-      const data: HeatDataPoint[] = await RainCockpit.getFloodSeasonHeatmapData()
-      if (data && data.length > 0) {
-        const heatData = data.map((p: HeatDataPoint) => ({
-          lat: p.lat,
-          lng: p.lng,
-          weight: p.count || 1
-        }))
-        heat.setData(heatData)
-        console.log('[汛期驾驶舱] 热力图数据已刷新，共', heatData.length, '个坐标点')
-      } else {
-        heat.setData([])
-      }
-    } catch (err) {
-      console.error('[汛期驾驶舱] 热力图数据加载失败：', err)
-    }
-  }
 
   // ==================== 生命周期 ====================
   onMounted(() => {
@@ -789,6 +958,10 @@
   })
 
   onBeforeUnmount(() => {
+    if (heatMarkerLayer) {
+      heatMarkerLayer.setMap(null)
+      heatMarkerLayer = null
+    }
     if (heat && typeof heat.setMap === 'function') {
       heat.setMap(null)
       heat = null
@@ -948,6 +1121,56 @@
     backdrop-filter: blur(8px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   }
+  /* 日期范围选择器(toolbar 内,小尺寸,与按钮风格统一) */
+  .map-date-picker {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--fs-toolbar-btn-bg);
+    border: 1px solid var(--fs-toolbar-btn-border);
+    border-radius: 8px;
+    padding: 0 8px;
+    height: 30px;
+    transition: all 0.2s ease;
+  }
+  .map-date-picker:hover {
+    background: rgba(91, 156, 245, 0.12);
+    border-color: rgba(91, 156, 245, 0.3);
+  }
+  .map-date-picker .map-date-icon {
+    font-size: 14px;
+    color: var(--fs-toolbar-btn-color);
+    flex-shrink: 0;
+  }
+  .map-date-picker :deep(.el-date-editor.el-input) {
+    width: 220px;
+    height: 26px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    --el-input-bg-color: transparent;
+  }
+  .map-date-picker :deep(.el-date-editor.el-input .el-input__wrapper) {
+    background: transparent;
+    box-shadow: none;
+    padding: 0 4px;
+  }
+  .map-date-picker :deep(.el-input__inner) {
+    color: var(--fs-toolbar-btn-color);
+    font-size: 12px;
+    height: 26px;
+    line-height: 26px;
+  }
+  .map-date-picker :deep(.el-range-input) {
+    color: var(--fs-toolbar-btn-color);
+    background: transparent;
+    font-size: 12px;
+  }
+  .map-date-picker :deep(.el-range-separator) {
+    color: var(--fs-toolbar-btn-color);
+    font-size: 11px;
+  }
+
 
   .district-img-btn {
     display: flex;
@@ -991,6 +1214,57 @@
   }
 
   /* ==================== 停车场详情面板（点击 marker） ==================== */
+  /* ==================== 热力点详情面板 ==================== */
+  .heat-point-detail-panel {
+    position: absolute;
+    left: 12px;
+    top: 60px;
+    width: 280px;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 8px;
+    color: #f1f5f9;
+    z-index: 9999;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    animation: heat-point-detail-in 0.2s ease-out;
+  }
+  @keyframes heat-point-detail-in {
+    from {
+      opacity: 0;
+      transform: translateX(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  .heat-point-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  }
+  .heat-point-detail-title {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .heat-point-detail-close {
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 16px;
+    line-height: 1;
+  }
+  .heat-point-detail-close:hover {
+    color: #f1f5f9;
+  }
+  .heat-point-detail-body {
+    padding: 12px 14px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
   .parking-detail-panel {
     position: absolute;
     left: 10px;
