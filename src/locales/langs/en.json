@@ -251,7 +251,8 @@
     "management": {
       "title": "Management Cockpit",
       "carCockpit": "Auto Insurance Cockpit",
-      "nonCarCockpit": "Non-Auto Insurance Cockpit"
+      "nonCarCockpit": "Non-Auto Insurance Cockpit",
+      "repairManagement": "Repair Resource Dashboard"
     },
     "efficiency": {
       "title": "Data Reports",
