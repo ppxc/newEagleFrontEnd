@@ -43,8 +43,21 @@ export const RainCockpit = {
   getReportTable(params = {}) {
     return request.get({ url: '/zyxt/api/rain/reportTable', params })
   },
-  /** 汛期热力图数据（来自 acd_old_case_rain_xq） */
+  /** 汛期热力图数据（聚合热力图,来自 acd_old_case_rain_xq） */
   getFloodSeasonHeatmapData(params = {}) {
     return request.get({ url: '/zyxt/api/rain/hotmap', params })
+  },
+  /** 汛期热力点(原始 marker 列表,与 /hotmap 并行,每点带密度着色档位)。
+   *  支持 params.date(YYYY-MM-DD),按 reportdate 过滤单日数据;不传则返回全量。 */
+  getHotPoints(params = {}) {
+    return request.get({ url: '/zyxt/api/rain/hotPoints', params })
+  },
+  /** 单日热力点便捷方法(走 /api/rain/hotPoints) */
+  getHotPointsByDate(date) {
+    return request.get({ url: '/zyxt/api/rain/hotPoints', params: { date } })
+  },
+  /** 汛期热力点(单一日期,走 /api/hotmap,实际后端 endpoint) */
+  getHotmapByDate(date) {
+    return request.get({ url: '/zyxt/api/hotmap', params: { date } })
   }
 }
