@@ -41,7 +41,14 @@
             class="map-container"
             :class="{ 'map-fullscreen': isMapFullscreen }"
           >
-            <div class="map-toolbar">
+            <!-- 工具栏:
+                 - 非全屏:留在地图容器内,position:absolute(top:12px left:12px),跟着地图走
+                 - 全屏:用 Teleport 提升到 body,position:fixed(top:12px left:12px),脱离地图父级 overflow:hidden
+                 用 v-if 同时挂两份避免 Teleport 内无条件渲染引起 z-index 与状态泄露 -->
+            <div
+              v-if="!isMapFullscreen"
+              class="map-toolbar"
+            >
               <div
                 class="district-img-btn"
                 :class="{ active: isDistrictsVisible }"
@@ -77,6 +84,45 @@
                 />
               </div>
             </div>
+            <Teleport v-else to="body">
+              <div class="map-toolbar map-toolbar--fullscreen">
+                <div
+                  class="district-img-btn"
+                  :class="{ active: isDistrictsVisible }"
+                  @click="toggleDistricts"
+                  title="显示/隐藏行政区划"
+                >
+                  <ArtSvgIcon icon="ri:grid-line" />
+                </div>
+                <div
+                  class="district-img-btn"
+                  :class="{ active: isMapFullscreen }"
+                  @click="toggleMapFullscreen"
+                  title="切换全屏"
+                >
+                  <ArtSvgIcon
+                    :icon="isMapFullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-line'"
+                  />
+                </div>
+                <div class="map-date-picker">
+                  <ArtSvgIcon icon="ri:calendar-line" class="map-date-icon" />
+                  <el-date-picker
+                    v-model="dateRange"
+                    type="daterange"
+                    range-separator="至"
+                    start-placeholder="起始日"
+                    end-placeholder="截止日"
+                    format="YYYY-MM-DD"
+                    value-format="YYYY-MM-DD"
+                    :clearable="false"
+                    :editable="false"
+                    size="small"
+                    :teleported="true"
+                    @change="onDateRangeChange"
+                  />
+                </div>
+              </div>
+            </Teleport>
             <!-- 当前预警措施浮窗（地图左下角） -->
             <div class="flood-place-panel" :class="{ collapsed: isPlacePanelCollapsed }">
               <div class="place-panel-header">
@@ -373,7 +419,7 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, onBeforeUnmount, ref, computed, nextTick, watch } from 'vue'
+  import { onMounted, onBeforeUnmount, ref, computed, nextTick, watch, Teleport } from 'vue'
   import { ElTabs, ElTabPane } from 'element-plus'
   import { MapLoader } from '../../lpmap/api/map_loader'
   import { AdministrativeRegionManager } from '../../lpmap/api/administrative_regionmanager'
@@ -952,12 +998,20 @@
 
 
   // ==================== 生命周期 ====================
+  // 全屏态 ESC 退出:避免改完后日期框虽然可见但用户卡在全屏无法退出。
+  const onKeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && isMapFullscreen.value) {
+      isMapFullscreen.value = false
+    }
+  }
   onMounted(() => {
     initMap()
     fetchAll()
+    window.addEventListener('keydown', onKeydown)
   })
 
   onBeforeUnmount(() => {
+    window.removeEventListener('keydown', onKeydown)
     if (heatMarkerLayer) {
       heatMarkerLayer.setMap(null)
       heatMarkerLayer = null
@@ -1106,6 +1160,7 @@
     border-radius: 0;
   }
 
+  /* 默认:嵌在 .map-container 内,跟随地图布局 */
   .map-toolbar {
     position: absolute;
     top: 12px;
@@ -1120,6 +1175,12 @@
     border: 1px solid var(--fs-toolbar-border);
     backdrop-filter: blur(8px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+  /* 全屏态:由 Teleport 渲染到 body,脱离地图父级 overflow:hidden 裁剪上下文。
+     position:fixed + z-index:20000 > 全屏地图 9999,日期下拉不被遮挡。 */
+  .map-toolbar--fullscreen {
+    position: fixed;
+    z-index: 20000;
   }
   /* 日期范围选择器(toolbar 内,小尺寸,与按钮风格统一) */
   .map-date-picker {
