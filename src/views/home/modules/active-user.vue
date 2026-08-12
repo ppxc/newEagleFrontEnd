@@ -11,9 +11,7 @@
     />
     <div class="ml-1">
       <h3 class="mt-5 text-lg font-medium">部门工作量</h3>
-      <p class="mt-1 text-sm">
-        比上月 <span class="text-success font-medium">+15%</span>
-      </p>
+      <p class="mt-1 text-sm"> 比上月 <span class="text-success font-medium">+15%</span> </p>
       <p class="mt-1 text-sm">各部门当月案件总量与结案量分布</p>
     </div>
     <div class="flex-b mt-2">

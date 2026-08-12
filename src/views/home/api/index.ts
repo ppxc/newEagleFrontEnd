@@ -3,20 +3,8 @@
  * 留出向后端请求数据的接口：真接口 + mock 回落，后续联调时去掉 .catch 即可
  */
 import api from '@/utils/http'
-import type {
-  StatsCardVO,
-  WorkloadDeptVO,
-  ActivityVO,
-  TodoVO,
-  UserRowVO
-} from './types'
-import {
-  mockStatsCards,
-  mockWorkload,
-  mockActivities,
-  mockTodos,
-  mockUserRows
-} from './mock'
+import type { StatsCardVO, WorkloadDeptVO, ActivityVO, TodoVO, UserRowVO } from './types'
+import { mockStatsCards, mockWorkload, mockActivities, mockTodos, mockUserRows } from './mock'
 
 export const Home = {
   /**
@@ -25,9 +13,7 @@ export const Home = {
    * 返回: List<StatsCardData>，字段 { title, count, description }
    */
   getCardStats(): Promise<StatsCardVO[]> {
-    return api
-      .get<StatsCardVO[]>({ url: '/api/statsCardsData' })
-      .catch(() => mockStatsCards)
+    return api.get<StatsCardVO[]>({ url: '/api/statsCardsData' }).catch(() => mockStatsCards)
   },
 
   /**

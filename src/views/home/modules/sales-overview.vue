@@ -1,4 +1,4 @@
-<!-- 全年访问趋势：折线图（带渐变区） -->
+<!-- 全年工作量：折线图（带渐变区） -->
 <template>
   <div class="art-card h-105 p-5 mb-5 max-sm:mb-4">
     <div class="art-card-header">
