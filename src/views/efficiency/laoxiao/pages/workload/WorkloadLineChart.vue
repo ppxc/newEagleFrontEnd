@@ -14,7 +14,7 @@
     ckJsl: number
     dsTjl: number
     isAbnormal?: boolean
-    abnormalType?: string  // 'spike' | 'trend'
+    abnormalType?: string // 'spike' | 'trend'
   }
 
   interface SeriesData {

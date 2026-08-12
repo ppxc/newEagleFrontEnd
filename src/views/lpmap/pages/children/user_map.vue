@@ -371,7 +371,7 @@
         console.warn('地图容器初始尺寸为0，尝试调整尺寸')
         // 强制触发重排
         container.style.display = 'none'
-        container.offsetHeight // 触发重排
+        void container.offsetHeight // 触发重排
         container.style.display = ''
       }
 

@@ -664,7 +664,7 @@
   // ==================== 拉取所有非地图数据 ====================
   const fetchAll = async () => {
     try {
-      const [dayLevels, /* places, */ z, r, l, it, lp, cd, rt, hp] = await Promise.all([
+      const [dayLevels, /* places, */ z, r, l, it, lp, cd, rt] = await Promise.all([
         RainCockpit.getDayLevels() as Promise<DayLevel[]>,
         // RainCockpit.getCarPlaces() as Promise<CarPlace[]>,  // 暂隐藏停车场 marker(代码保留)
         RainCockpit.getZhibans() as Promise<Zhiban[]>,
@@ -673,8 +673,7 @@
         RainCockpit.getItems() as Promise<Item[]>,
         RainCockpit.getLevelProcesses() as Promise<LevelProcess[]>,
         RainCockpit.getCardData() as Promise<CardData>,
-        RainCockpit.getReportTable() as Promise<CardData[]>,
-        RainCockpit.getHotPoints() as Promise<HeatDataPoint[]>
+        RainCockpit.getReportTable() as Promise<CardData[]>
       ])
 
       // 滚动文字
@@ -706,8 +705,10 @@
       // pendingPlaces.value = places || []  // 暂隐藏停车场 marker
       // if (map) renderMarkers(pendingPlaces.value)
 
-      // 暂存热力点,等地图就绪后渲染(每个事故点 → 一个 marker,按密度着色)
-      pendingHeatPoints.value = hp || []
+      // 按当前 dateRange 拉取热力点(替代原先的全量 getHotPoints)
+      const [hpStart, hpEnd] = dateRange.value
+      const hp = await loadHotPointsByDateRange(hpStart, hpEnd)
+      pendingHeatPoints.value = hp
       if (map) renderHeatMarkers(pendingHeatPoints.value)
     } catch (err) {
       console.error('[汛期驾驶舱] 数据拉取失败:', err)
@@ -835,17 +836,7 @@
     }
     console.log('[汛期驾驶舱] onDateRangeChange 触发:', val)
     try {
-      // 后端 /hotPoints 仅接受单日期,所以按天循环调用并合并
-      const dates = expandDateRange(val[0], val[1])
-      console.log('[汛期驾驶舱] 展开日期:', dates)
-      const results = await Promise.all(
-        dates.map((d) => RainCockpit.getHotPointsByDate(d) as Promise<HeatDataPoint[]>)
-      )
-      // http 拦截器已解包 Result.data,所以 results 直接是数据数组
-      const merged: HeatDataPoint[] = []
-      for (const arr of results) {
-        if (Array.isArray(arr)) merged.push(...arr)
-      }
+      const merged = await loadHotPointsByDateRange(val[0], val[1])
       pendingHeatPoints.value = merged
       if (map) renderHeatMarkers(merged)
       if (merged.length === 0) {
@@ -869,6 +860,24 @@
       cur.setDate(cur.getDate() + 1)
     }
     return out
+  }
+
+  /** 按日期范围拉取热力点数据。后端 /hotPoints 仅接受单日 date,所以展开范围逐日调用并合并。 */
+  const loadHotPointsByDateRange = async (
+    start: string | null | undefined,
+    end: string | null | undefined
+  ): Promise<HeatDataPoint[]> => {
+    if (!start || !end) return []
+    const dates = expandDateRange(start, end)
+    if (!dates.length) return []
+    const results = await Promise.all(
+      dates.map((d) => RainCockpit.getHotPointsByDate(d) as Promise<HeatDataPoint[]>)
+    )
+    const merged: HeatDataPoint[] = []
+    for (const arr of results) {
+      if (Array.isArray(arr)) merged.push(...arr)
+    }
+    return merged
   }
 
 

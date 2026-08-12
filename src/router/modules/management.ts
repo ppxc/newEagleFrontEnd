@@ -39,16 +39,6 @@ export const managementRoutes: AppRouteRecord = {
         keepAlive: false,
         roles: ['R_SUPER', 'R_ADMIN']
       }
-    },
-    {
-      path: 'repair_management',
-      name: 'RepairManagement',
-      component: '/management/pages/repair_management',
-      meta: {
-        title: 'menus.management.repairManagement',
-        keepAlive: false,
-        roles: ['R_SUPER', 'R_ADMIN']
-      }
     }
   ]
 }

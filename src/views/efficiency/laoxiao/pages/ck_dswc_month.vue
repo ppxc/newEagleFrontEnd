@@ -143,7 +143,7 @@
     handleRefresh,
     handleSearch,
     handleReset
-  } = useLaoxiaoTable<CkDswcMonthData>({
+  } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestCkDswcMonthPage,
     listApi: dataReport.axiosRequestCkDswcMonth,
     hasComnameSgs: true,
