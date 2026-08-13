@@ -271,7 +271,8 @@
       "title": "数智平台",
       "carCockpit": "车险可视化平台",
       "nonCarCockpit": "非车可视化平台",
-      "floodSeason": "汛期可视化平台"
+      "floodSeason": "汛期可视化平台",
+      "repairManagement": "送修资源管理看板"
     },
     "cost": {
       "title": "成本监控"

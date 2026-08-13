@@ -61,3 +61,106 @@ export const RainCockpit = {
     return request.get({ url: '/zyxt/api/hotmap', params: { date } })
   }
 }
+
+// ============================================================
+// 维修管理 / 送修资源管理看板 — 接口预留
+// ------------------------------------------------------------
+// 当前阶段:不接后端。所有方法体只 console.info 留痕 + 返回空,
+//           页面层会用 MOCK_* 常量 fallback,保证 UI 不空白。
+// 等后端 `/api/repair/*` 真实接口就绪后,只需替换每个方法体为:
+//   return request.get({ url: '/zyxt/api/repair/xxx', params })
+// ============================================================
+
+const repairTodo = (method, params) =>
+  console.info(
+    `[RepairCockpit.${method}] TODO: 等待后端 /repair/* 接口实现`,
+    params
+  )
+
+// 注:此文件为 .js,通过 JSDoc 引入 types.ts 的类型,供 .vue SFC TS 推断使用
+/**
+ * @typedef {import('./types').StoreType} StoreType
+ * @typedef {import('./types').DimensionType} DimensionType
+ * @typedef {import('./types').PersonnelDim} PersonnelDim
+ * @typedef {import('./types').RepairCoreMetricsVO} RepairCoreMetricsVO
+ * @typedef {import('./types').RepairTrendVO} RepairTrendVO
+ * @typedef {import('./types').ProdRatioDetailVO} ProdRatioDetailVO
+ * @typedef {import('./types').RepairTableRowVO} RepairTableRowVO
+ * @typedef {import('./types').PrTableRowVO} PrTableRowVO
+ * @typedef {import('./types').PersonnelRowVO} PersonnelRowVO
+ */
+
+/**
+ * @typedef {object} GetKpiParams
+ * @property {string} [date]   统计日期 YYYY-MM-DD
+ * @typedef {object} GetTrendParams
+ * @property {StoreType} storeType
+ * @typedef {object} GetOrgDimParams
+ * @property {DimensionType} dimension
+ * @typedef {object} GetTeamDimParams
+ * @property {PersonnelDim} dimension
+ */
+
+/** 页面: repair_management.vue — 送修资源管理看板 */
+export const RepairCockpit = {
+  /**
+   * 4 张 KPI 卡片的核心指标
+   * @param {GetKpiParams} [params]
+   * @returns {Promise<Partial<RepairCoreMetricsVO>>}
+   */
+  getKpi(params = {}) {
+    repairTodo('getKpi', params)
+    return Promise.resolve({})
+  },
+
+  /**
+   * 明细趋势数据(按 4S / 修理厂 拆分)
+   * @param {GetTrendParams} params
+   * @returns {Promise<Partial<RepairTrendVO>>}
+   */
+  getTrend(params = { storeType: '4s' }) {
+    repairTodo('getTrend', params)
+    return Promise.resolve({})
+  },
+
+  /**
+   * 产保比管控明细(按 4S / 修理厂)
+   * @param {GetTrendParams} params
+   * @returns {Promise<Partial<ProdRatioDetailVO>>}
+   */
+  getPrRatio(params = { storeType: '4s' }) {
+    repairTodo('getPrRatio', params)
+    return Promise.resolve({})
+  },
+
+  /**
+   * 机构 / 品牌 / 集团 维度 送修多指标 明细表格
+   * @param {GetOrgDimParams} params
+   * @returns {Promise<Partial<Record<DimensionType, RepairTableRowVO[]>>>}
+   */
+  getOrgDim(params = { dimension: '机构' }) {
+    repairTodo('getOrgDim', params)
+    return Promise.resolve({})
+  },
+
+  /**
+   * 机构 / 品牌 / 集团 维度 产保比管控 明细表格
+   * @param {GetOrgDimParams} params
+   * @returns {Promise<Partial<Record<DimensionType, PrTableRowVO[]>>>}
+   */
+  getOrgPrDim(params = { dimension: '机构' }) {
+    repairTodo('getOrgPrDim', params)
+    return Promise.resolve({})
+  },
+
+  /**
+   * 分部 / 小组 / 个人 维度 查勘人员效能表格
+   * @param {GetTeamDimParams} params
+   * @returns {Promise<Partial<Record<PersonnelDim, PersonnelRowVO[]>>>}
+   */
+  getTeamDim(params = { dimension: '分部' }) {
+    repairTodo('getTeamDim', params)
+    return Promise.resolve({})
+  }
+}
+
