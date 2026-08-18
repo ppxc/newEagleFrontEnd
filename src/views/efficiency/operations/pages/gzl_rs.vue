@@ -71,7 +71,7 @@
         @header-click="handleHeaderClick"
         @sort-change="handleSortChange"
         @pagination:size-change="handleSizeChange"
-        @pagination:current-change="localHandleCurrentChange"
+        @pagination:current-change="handleCurrentChange"
       >
         <!-- 序号列：自动计算分页序号 -->
         <template #index="{ $index }">
@@ -230,6 +230,7 @@
     fetchData,
     refreshData,
     handleSizeChange,
+    handleCurrentChange,
     columns,
     columnChecks
   } = useEfficiencyTable({
@@ -314,9 +315,6 @@
   const handleSortChange = () => {}
 
   // ==================== 9. 刷新 / 搜索 / 重置 ====================
-  const localHandleCurrentChange = (newCurrent: number) => {
-    fetchData({ current: newCurrent })
-  }
 
   const handleRefresh = async () => {
     try {

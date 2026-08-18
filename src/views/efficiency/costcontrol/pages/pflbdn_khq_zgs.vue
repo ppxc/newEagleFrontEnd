@@ -22,7 +22,7 @@
           </ElSpace>
         </template>
       </ArtTableHeader>
-      <ArtTable :loading="loading" :pagination="pagination" :data="mergedData" :span-method="spanMethod" :columns="columns" :height="tableHeight" :scrollbar-always-on="true" empty-height="660px" @pagination:size-change="handleSizeChange" @pagination:current-change="localHandleCurrentChange">
+      <ArtTable :loading="loading" :pagination="pagination" :data="mergedData" :span-method="spanMethod" :columns="columns" :height="tableHeight" :scrollbar-always-on="true" empty-height="660px" @pagination:size-change="handleSizeChange" @pagination:current-change="handleCurrentChange">
         <template #index="{ $index }"><span>{{ $index + 1 + (pagination.current - 1) * pagination.size }}</span></template>
       </ArtTable>
     </ElCard>
@@ -96,7 +96,7 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
       /* ignore */
     }
   }
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, handleCurrentChange, columns, columnChecks } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<Data>> => {
         const queryParams = { current: params.current, size: params.size, tjDate: tableApiParams.value.tjDate || '', comnameSgs: tableApiParams.value.comnameSgs ?? '', comname: tableApiParams.value.comname ?? '', khq: tableApiParams.value.khq ?? '' }
@@ -147,7 +147,6 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
     performance: { enableCache: true, cacheTime: 5 * 60 * 1000, debounceTime: 300, maxCacheSize: 100 }
   })
   const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
-  const localHandleCurrentChange = (n: number) => { fetchData({ current: n }) }
   const handleRefresh = async () => { try { await fetchAllForDropdown(searchFormState.value.tjDate || tableApiParams.value.tjDate || ''); isInitialized = true; await fetchData() } catch { await fetchData() } }
   const handleSearch = async () => { try { await searchBarRef.value?.validate(); tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }; refreshData() } catch {} }
   const handleReset = () => { Object.assign(searchFormState.value, DEFAULT_FORM); tableApiParams.value = { ...DEFAULT_PAGINATION, ...searchFormState.value }; refreshData() }

@@ -57,7 +57,7 @@
         :scrollbar-always-on="true"
         empty-height="660px"
         @pagination:size-change="handleSizeChange"
-        @pagination:current-change="localHandleCurrentChange"
+        @pagination:current-change="handleCurrentChange"
       >
         <template #index="{ $index }">
           <span>{{ $index + 1 + (pagination.current - 1) * pagination.size }}</span>
@@ -238,6 +238,7 @@
     fetchData,
     refreshData,
     handleSizeChange,
+    handleCurrentChange,
     columns,
     columnChecks
   } = useEfficiencyTable({
@@ -325,9 +326,6 @@
 
   // ==================== 7. 操作 ====================
   const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
-  const localHandleCurrentChange = (newCurrent: number) => {
-    fetchData({ current: newCurrent })
-  }
 
   const handleRefresh = async () => {
     try {

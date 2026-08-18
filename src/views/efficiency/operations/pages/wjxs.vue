@@ -69,7 +69,7 @@
         :scrollbar-always-on="true"
         empty-height="660px"
         @pagination:size-change="handleSizeChange"
-        @pagination:current-change="localHandleCurrentChange"
+        @pagination:current-change="handleCurrentChange"
       >
         <!-- 序号列 -->
         <template #index="{ $index }">
@@ -252,6 +252,7 @@
     fetchData,
     refreshData,
     handleSizeChange,
+    handleCurrentChange,
     columns,
     columnChecks
   } = useEfficiencyTable({
@@ -362,9 +363,6 @@
 
   // ==================== 7. 分页事件 ====================
   const tableRef = ref<any>(null)
-  const localHandleCurrentChange = (newCurrent: number) => {
-    fetchData({ current: newCurrent })
-  }
 
   // ==================== 8. 页面操作方法 ====================
   const handleRefresh = async () => {

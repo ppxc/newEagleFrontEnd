@@ -22,7 +22,7 @@
           </ElSpace>
         </template>
       </ArtTableHeader>
-      <ArtTable :loading="loading" :pagination="pagination" :data="mergedData" :span-method="spanMethod" :columns="columns" :height="tableHeight" :scrollbar-always-on="true" empty-height="660px" @pagination:size-change="handleSizeChange" @pagination:current-change="localHandleCurrentChange">
+      <ArtTable :loading="loading" :pagination="pagination" :data="mergedData" :span-method="spanMethod" :columns="columns" :height="tableHeight" :scrollbar-always-on="true" empty-height="660px" @pagination:size-change="handleSizeChange" @pagination:current-change="handleCurrentChange">
         <template #index="{ $index }"><span>{{ $index + 1 + (pagination.current - 1) * pagination.size }}</span></template>
       </ArtTable>
     </ElCard>
@@ -88,7 +88,7 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
     comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
     ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司`, type: 'success' })
   }
-  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
+  const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, handleCurrentChange, columns, columnChecks } = useEfficiencyTable({
     core: {
       apiFn: async (params: UseTableParams): Promise<UseTableResult<Data>> => {
         const queryParams = { current: params.current, size: params.size, tjDate: tableApiParams.value.tjDate || '', comnameSgs: tableApiParams.value.comnameSgs ?? '', repairfactoryname: tableApiParams.value.repairfactoryname ?? '' }
@@ -158,7 +158,6 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
     performance: { enableCache: true, cacheTime: 5 * 60 * 1000, debounceTime: 300, maxCacheSize: 100 }
   })
   const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
-  const localHandleCurrentChange = (n: number) => { fetchData({ current: n }) }
   const handleRefresh = async () => { try { const res = await repairShop.axiosRequestWxdwGjzb({ current: 1, size: 9999 }); if (Array.isArray(res) && res.length) { buildDeptOptions(res); currentMaxTjTime.value = res[0].maxTjTime || '' } await fetchData() } catch { await fetchData() } }
   const handleSearch = async () => { try { await searchBarRef.value?.validate(); tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }; refreshData() } catch {} }
   const handleReset = () => { Object.assign(searchFormState.value, DEFAULT_FORM); tableApiParams.value = { ...DEFAULT_PAGINATION, ...searchFormState.value }; refreshData() }

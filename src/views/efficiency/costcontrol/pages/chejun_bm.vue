@@ -53,7 +53,7 @@
         :scrollbar-always-on="true"
         empty-height="660px"
         @pagination:size-change="handleSizeChange"
-        @pagination:current-change="localHandleCurrentChange"
+        @pagination:current-change="handleCurrentChange"
       >
         <template #index="{ $index }"
           ><span>{{ $index + 1 + (pagination.current - 1) * pagination.size }}</span></template
@@ -180,6 +180,7 @@
     fetchData,
     refreshData,
     handleSizeChange,
+    handleCurrentChange,
     columns,
     columnChecks
   } = useEfficiencyTable({
@@ -256,9 +257,6 @@
     }
   })
   const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
-  const localHandleCurrentChange = (n: number) => {
-    fetchData({ current: n })
-  }
   const handleRefresh = async () => {
     try {
       const res = await carAvgLoss.axiosRequestChejunBm({ current: 1, size: 9999 })
