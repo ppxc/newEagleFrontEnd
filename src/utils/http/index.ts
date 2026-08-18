@@ -36,6 +36,14 @@ let unauthorizedTimer: NodeJS.Timeout | null = null
 interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
   showErrorMessage?: boolean
   showSuccessMessage?: boolean
+  /**
+   * 跳过「Result.data 解包 + code 校验」的统一契约。
+   * 用于直接透传腾讯地图等上游原生响应的接口（如行政区划 geocoder/district）。
+   * - 设为 true 时，响应拦截器不做 code==200 校验，request() 返回原始响应体 res.data，
+   *   调用方拿到上游原生结构（如 { status, message, result }）。
+   * 默认 false（走 Result 信封解包）。
+   */
+  skipUnwrap?: boolean
 }
 
 const { VITE_API_URL, VITE_WITH_CREDENTIALS } = import.meta.env
@@ -83,6 +91,10 @@ axiosInstance.interceptors.request.use(
 /** 响应拦截器 */
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse<BaseResponse>) => {
+    const config = response.config as unknown as ExtendedAxiosRequestConfig
+    // skipUnwrap：跳过 Result 信封的 code 校验，直接透传上游原始响应
+    if (config?.skipUnwrap) return response
+
     const { code, msg } = response.data
 
     if (code == ApiStatus.success) return response
@@ -186,6 +198,9 @@ async function request<T = any>(config: ExtendedAxiosRequestConfig): Promise<T> 
     if (config.showSuccessMessage && res.data.msg) {
       showSuccess(res.data.msg)
     }
+
+    // skipUnwrap：返回原始响应体（上游原生结构），不做 Result.data 解包
+    if (config.skipUnwrap) return res.data as T
 
     return res.data.data as T
   } catch (error) {

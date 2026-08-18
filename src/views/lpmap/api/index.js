@@ -39,17 +39,28 @@ export const hotmap = {
   }
 }
 
-// ==================== 行政区划相关 API（内部使用）===================
-export const geocoder = (location) => {
+// ==================== 行政区划相关 API（内部使用）====================
+// 注意：这三个接口返回的是腾讯地图上游原生结构 { status, message, result }，
+// 不走应用层 Result{ code, msg, data } 信封解包。故统一使用 skipUnwrap: true，
+// 并做一次归一化：若上游被包在 Result.data 中则取 .data，否则原样返回。
+
+/** 归一化：兼容「结果包在 Result.data」与「上游原生透传」两种形态 */
+const normalizeTencentResponse = (res) =>
+  res && typeof res === 'object' && res.data !== undefined && res.data !== null ? res.data : res
+
+export const geocoder = async (location) => {
   const url = `${VITE_API_PROXY_PORT_URL}/zyxt/api/map/geocoder?location=${location}`
-  return request.get({ url })
+  const res = await request.get({ url, skipUnwrap: true })
+  return normalizeTencentResponse(res)
 }
 
-export const searchDistrict = (keyword) => {
+export const searchDistrict = async (keyword) => {
   const url = `${VITE_API_PROXY_PORT_URL}/zyxt/api/map/district/search?keyword=${encodeURIComponent(keyword)}`
-  return request.get({ url })
+  const res = await request.get({ url, skipUnwrap: true })
+  return normalizeTencentResponse(res)
 }
 
-export const districtChildren = (id) => {
-  return request.get({ url: '/zyxt/api/map/district/getchildren', params: { id } })
+export const districtChildren = async (id) => {
+  const res = await request.get({ url: '/zyxt/api/map/district/getchildren', params: { id }, skipUnwrap: true })
+  return normalizeTencentResponse(res)
 }
