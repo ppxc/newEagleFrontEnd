@@ -298,6 +298,10 @@
   const locationProgressText = ref('')
   let locationProgressTimer: ReturnType<typeof setInterval> | null = null
 
+  // 轨迹加载阶段的瞬时定时器（FB-22）：保存引用以便组件卸载时清理
+  let playbackTimer: ReturnType<typeof setTimeout> | null = null
+  let trackLoadingTimer: ReturnType<typeof setTimeout> | null = null
+
   const userList = ref<any[]>([])
   const isSidebarCollapsed = ref(false)
   const selectedUser = ref<string>('')
@@ -731,8 +735,8 @@
       currentTrackBounds = bounds
       map.fitBounds(bounds, { padding: currentTrackPadding })
 
-      setTimeout(() => startPlayback(path), 50)
-      setTimeout(() => {
+      playbackTimer = setTimeout(() => startPlayback(path), 50)
+      trackLoadingTimer = setTimeout(() => {
         trackLoading.value = false
       }, 2000)
       error.value = ''
@@ -920,6 +924,15 @@
     if (locationProgressTimer) {
       clearInterval(locationProgressTimer)
       locationProgressTimer = null
+    }
+    // 清理轨迹加载阶段的瞬时定时器，避免卸载后仍触发访问已销毁的地图实例（FB-22）
+    if (playbackTimer) {
+      clearTimeout(playbackTimer)
+      playbackTimer = null
+    }
+    if (trackLoadingTimer) {
+      clearTimeout(trackLoadingTimer)
+      trackLoadingTimer = null
     }
     clearOverlays()
     if (map) {
