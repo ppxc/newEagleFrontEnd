@@ -77,18 +77,34 @@ export function useLaoxiaoTable(opts: UseLaoxiaoTableOptions) {
     return items
   })
 
+  /**
+   * 把 listApi 返回结果规整为数组。
+   *
+   * http 层已解包 Result.data，但后端全量端点既有返回纯数组 List<T>，
+   * 也可能返回分页结构 { records: T[], total, current, size }。
+   * 仅靠 Array.isArray 判断会把 { records:[...] } 误判为对象，导致
+   * comnameSgs 下拉始终为空（FB-20）。这里两种形态都兼容。
+   */
+  const normalizeList = (res: any): any[] => {
+    if (Array.isArray(res)) return res
+    if (res && typeof res === 'object' && Array.isArray(res.records)) return res.records
+    return []
+  }
+
   // ==================== 下拉选项构建 ====================
+  const collectComnameSgsOptions = (rows: any[]) => {
+    const set = new Set<string>()
+    rows.forEach((item: any) => {
+      if (item.comnameSgs) set.add(item.comnameSgs)
+    })
+    comnameSgsOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
+  }
+
   const buildComnameSgsOptions = async (tjDate: string) => {
     if (!hasComnameSgs) return
     try {
       const res = await opts.listApi({ current: 1, size: 9999, tjDate, comnameSgs: '' })
-      if (Array.isArray(res)) {
-        const set = new Set<string>()
-        res.forEach((item: any) => {
-          if (item.comnameSgs) set.add(item.comnameSgs)
-        })
-        comnameSgsOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
-      }
+      collectComnameSgsOptions(normalizeList(res))
     } catch {
       /* ignore */
     }
@@ -190,9 +206,10 @@ export function useLaoxiaoTable(opts: UseLaoxiaoTableOptions) {
           tjDate: tableApiParams.value.tjDate,
           comnameSgs: ''
         })
-        if (Array.isArray(res) && res.length) {
-          currentMaxTjTime.value = (res[0] as any).maxTjTime || ''
-          buildComnameSgsOptions(tableApiParams.value.tjDate || (res[0] as any).maxTjTime || '')
+        const rows = normalizeList(res)
+        if (rows.length) {
+          currentMaxTjTime.value = (rows[0] as any).maxTjTime || ''
+          collectComnameSgsOptions(rows)
         }
       } catch {
         /* ignore */

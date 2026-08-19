@@ -4,6 +4,9 @@ export class MapLoader {
   private mapLoaded = false
   private loadingPromise: Promise<boolean> | null = null
 
+  /** capture 阶段全局错误监听器（需在 reset/unmount 时移除，避免泄漏，FB-21） */
+  private globalCapturedErrorHandler: ((e: ErrorEvent) => void) | null = null
+
   private constructor() {}
 
   public static getInstance(): MapLoader {
@@ -63,6 +66,7 @@ export class MapLoader {
 
         script.onerror = (error) => {
           console.error('腾讯地图API加载失败:', error)
+          this.loadingPromise = null // 允许下次重新尝试加载（FB-21）
           reject(new Error('地图API加载失败'))
         }
 
@@ -83,27 +87,28 @@ export class MapLoader {
 
         window.addEventListener('error', globalErrorHandler)
 
-        // 先添加脚本标签，再执行可能的全局函数
-        // console.log('即将插入地图API脚本标签');
-        document.head.appendChild(script)
-
-        // 添加额外的错误处理以应对可能的第三方请求问题
-        window.addEventListener(
-          'error',
-          (e) => {
+        // 添加额外的错误处理以应对可能的第三方请求问题（capture 阶段）。
+        // 监听器保存到类成员，便于 reset()/卸载时移除，避免泄漏（FB-21）。
+        if (!this.globalCapturedErrorHandler) {
+          this.globalCapturedErrorHandler = (e: ErrorEvent) => {
             if (e.filename && e.filename.includes('map.qq.com')) {
               // 忽略腾讯地图的遥测请求错误
               console.warn('忽略腾讯地图遥测请求错误:', e)
               return
             }
-          },
-          true
-        ) // 使用捕获阶段
+          }
+          window.addEventListener('error', this.globalCapturedErrorHandler, true)
+        }
+
+        // 先添加脚本标签，再执行可能的全局函数
+        // console.log('即将插入地图API脚本标签');
+        document.head.appendChild(script)
 
         // 移除全局错误监听器
         window.removeEventListener('error', globalErrorHandler)
       } catch (error) {
         console.error('腾讯地图API加载失败:', error)
+        this.loadingPromise = null // 允许下次重新尝试加载（FB-21）
         reject(new Error('地图API加载失败'))
       }
     })
@@ -166,6 +171,7 @@ export class MapLoader {
 
     const cleanupAndReject = () => {
       observer.disconnect()
+      this.loadingPromise = null // 允许下次重新尝试加载（FB-21）
       reject(new Error('地图API初始化超时'))
     }
 
@@ -205,6 +211,12 @@ export class MapLoader {
   public reset(): void {
     this.mapLoaded = false
     this.loadingPromise = null
+
+    // 移除 capture 阶段全局错误监听器，避免泄漏（FB-21）
+    if (this.globalCapturedErrorHandler) {
+      window.removeEventListener('error', this.globalCapturedErrorHandler, true)
+      this.globalCapturedErrorHandler = null
+    }
 
     // 移除现有脚本
     const existingScript = document.getElementById('tencent-map-script')
