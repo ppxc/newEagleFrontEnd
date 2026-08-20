@@ -19,7 +19,6 @@ export const routeModules: AppRouteRecord[] = [
   complaintRoutes,
   resourceRoutes,
   profileRoutes
-  // permissionConfigRoutes,
-  //listRoutes,
+  // listRoutes,
   // testRoutes
 ]

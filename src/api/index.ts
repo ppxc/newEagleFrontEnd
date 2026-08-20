@@ -14,9 +14,7 @@ import request from '@/utils/http'
 /**
  * 获取菜单列表
  * 注：后端目前没有此端点（/api/menus），保留以兼容旧逻辑。
- * 引用方：
- *   - src/router/core/MenuProcessor.ts
- *   - src/views/permissionConfig/api/index.ts
+ * 引用方：src/router/core/MenuProcessor.ts
  */
 export const MenuList = () => {
   return request.get<unknown[]>({ url: '/zyxt/api/menus' })
