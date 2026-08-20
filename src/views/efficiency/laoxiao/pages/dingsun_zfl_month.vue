@@ -72,7 +72,7 @@
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
   import * as XLSX from 'xlsx'
-  import { dataReport } from '../../api'
+  import { dataReport, getDistinctComnames } from '../../api'
   import { useLaoxiaoTable } from '../../api/useLaoxiaoTable'
   import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
 
@@ -145,7 +145,7 @@
     handleReset
   } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestDingsunZflMonthPage,
-    listApi: dataReport.axiosRequestDingsunZflMonth,
+    distinctApi: (params) => getDistinctComnames({ table: 'acd_dingsun_zfl_month', ...params }),
     hasComnameSgs: true,
     columnsFactory: () => [
       {

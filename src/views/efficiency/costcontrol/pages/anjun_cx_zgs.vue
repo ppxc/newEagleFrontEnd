@@ -74,7 +74,7 @@
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
-  import { claimAverage } from '../../api'
+  import { claimAverage, getDistinctComnames } from '../../api'
 
   defineOptions({ name: 'AnjunCxZgsTable' })
 
@@ -182,21 +182,19 @@
   // ==================== 5. 构建下拉 ====================
   // 用独立的全量端点（/list, size: 9999）构建市公司下拉，避免首屏分页只有 20 行时遗漏
   // 后续页中才出现的市公司。返回的 comnameSgs 集合是全量的，与分页结果无关。
-  const fetchAllForDropdown = async (tjDate: string) => {
+  const fetchAllForDropdown = async (tjDate?: string) => {
     if (comOptions.value.length) return
     try {
-      const res = await claimAverage.axiosRequestAnjunCxZgs({
-        current: 1,
-        size: 9999,
-        tjDate,
-        comnameSgs: ''
+      const res = await getDistinctComnames({
+        table: 'acd_anjun_cx_zgs',
+        tjDate: tjDate || tableApiParams.value.tjDate || ''
       })
-      if (Array.isArray(res) && res.length) {
-        const comSet = new Set<string>()
-        res.forEach((item: AnjunCxZgsData) => {
-          if (item.comnameSgs) comSet.add(item.comnameSgs)
+      if (Array.isArray(res)) {
+        const set = new Set<string>()
+        res.forEach((name) => {
+          if (name) set.add(name)
         })
-        comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
+        comOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
         ElNotification({
           title: '提示',
           message: `已加载：${comOptions.value.length} 个市公司`,
@@ -328,27 +326,13 @@
   }
 
   const handleRefresh = async () => {
-    // 重置初始化标志和下拉，强制重新拉全量
     comOptions.value = []
     isInitialized = false
     try {
-      // 先拉到分页数据用于 maxTjTime，再拉全量构建下拉
-      const res = await claimAverage.axiosRequestAnjunCxZgs({
-        current: 1,
-        size: 9999,
-        tjDate: tableApiParams.value.tjDate,
-        comnameSgs: ''
-      })
-      if (Array.isArray(res) && res.length) {
-        currentMaxTjTime.value = res[0].maxTjTime || ''
-        await fetchAllForDropdown(
-          tableApiParams.value.tjDate || res[0].maxTjTime?.substring(0, 10) || ''
-        )
-        isInitialized = true
-      }
+      await fetchAllForDropdown()
       await fetchData()
     } catch {
-      await fetchData()
+      /* ignore */
     }
   }
 

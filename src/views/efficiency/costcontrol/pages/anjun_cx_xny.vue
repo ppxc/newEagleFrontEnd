@@ -72,7 +72,7 @@
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
-  import { claimAverage } from '../../api'
+  import { claimAverage, getDistinctComnames } from '../../api'
 
   defineOptions({ name: 'AnjunCxXnyTable' })
 
@@ -176,19 +176,17 @@
   // ==================== 5. 构建下拉 (全量版) ====================
   // 用独立的全量端点（/list, size: 9999）构建市公司下拉，避免首屏分页只有 20 行时遗漏
   // 后续页中才出现的市公司。返回的集合是全量的，与分页结果无关。
-  const fetchAllForDropdown = async () => {
+  const fetchAllForDropdown = async (tjDate?: string) => {
     if (comOptions.value.length) return
     try {
-      const res = await claimAverage.axiosRequestAnjunCxXny({
-        current: 1,
-        size: 9999,
-        tjDate: tableApiParams.value.tjDate,
-        comnameSgs: tableApiParams.value.comnameSgs
+      const res = await getDistinctComnames({
+        table: 'acd_anjun_cx_xny',
+        tjDate: tjDate || tableApiParams.value.tjDate || ''
       })
-      if (Array.isArray(res) && res.length) {
+      if (Array.isArray(res)) {
         const set = new Set<string>()
-        res.forEach((item) => {
-          if (item.comnameSgs) set.add(item.comnameSgs)
+        res.forEach((name) => {
+          if (name) set.add(name)
         })
         comOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
         ElNotification({

@@ -6,18 +6,19 @@ import { useTable, CacheInvalidationStrategy } from '@/hooks/core/useTable'
  *
  * 把 9 个 .vue 文件中重复的：搜索表单 + comnameSgs 下拉构建 + currentMaxTjTime
  * 跟踪 + useTable(apiFn 调分页端点) + handleSearch/Reset/Refresh 全部抽到此处。
- * 9 个页面只需提供：分页端点（pageApi）、全量端点（listApi）、列定义（columnsFactory）、
+ * 9 个页面只需提供：分页端点（pageApi）、下拉去重端点（distinctApi）、列定义（columnsFactory）、
  * 是否启用 comnameSgs 下拉。
  *
  * 分页端点（pageApi）后端返回 PageResult<T> = { records, total, current, size }
- * 全量端点（listApi）后端返回 List<T>（仅用于构建 comnameSgs 下拉的去重 Set）
+ * 下拉去重端点（distinctApi）后端返回 string[]（市公司去重名单），
+ * 替代曾经的"全量 list 端点"构建下拉，避免整表拉取（仅传几十个字符串）。
  */
 
 export interface UseLaoxiaoTableOptions {
   /** 后端分页端点（返回 PageResult<T>） */
   pageApi: (params: any) => Promise<any>
-  /** 后端全量端点（用于构造 comnameSgs 下拉的去重集合） */
-  listApi: (params: any) => Promise<any>
+  /** 后端去重端点（返回 string[]，市公司名单；hasComnameSgs=false 时可不传） */
+  distinctApi?: (params: any) => Promise<string[]>
   /** 列定义工厂（透传给 useTable） */
   columnsFactory: () => any[]
   /** 是否启用 comnameSgs 下拉过滤（默认 true；rs_gzl_year/rs_tjl_year 传 false） */
@@ -77,34 +78,20 @@ export function useLaoxiaoTable(opts: UseLaoxiaoTableOptions) {
     return items
   })
 
-  /**
-   * 把 listApi 返回结果规整为数组。
-   *
-   * http 层已解包 Result.data，但后端全量端点既有返回纯数组 List<T>，
-   * 也可能返回分页结构 { records: T[], total, current, size }。
-   * 仅靠 Array.isArray 判断会把 { records:[...] } 误判为对象，导致
-   * comnameSgs 下拉始终为空（FB-20）。这里两种形态都兼容。
-   */
-  const normalizeList = (res: any): any[] => {
-    if (Array.isArray(res)) return res
-    if (res && typeof res === 'object' && Array.isArray(res.records)) return res.records
-    return []
-  }
-
   // ==================== 下拉选项构建 ====================
-  const collectComnameSgsOptions = (rows: any[]) => {
+  const collectComnameSgsOptions = (names: string[]) => {
     const set = new Set<string>()
-    rows.forEach((item: any) => {
-      if (item.comnameSgs) set.add(item.comnameSgs)
+    names.forEach((name) => {
+      if (name) set.add(name)
     })
     comnameSgsOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
   }
 
   const buildComnameSgsOptions = async (tjDate: string) => {
-    if (!hasComnameSgs) return
+    if (!hasComnameSgs || !opts.distinctApi) return
     try {
-      const res = await opts.listApi({ current: 1, size: 9999, tjDate, comnameSgs: '' })
-      collectComnameSgsOptions(normalizeList(res))
+      const res = await opts.distinctApi({ tjDate })
+      collectComnameSgsOptions(Array.isArray(res) ? res : [])
     } catch {
       /* ignore */
     }
@@ -142,7 +129,7 @@ export function useLaoxiaoTable(opts: UseLaoxiaoTableOptions) {
           if (!searchFormState.value.tjDate && firstRecord.maxTjTime) {
             searchFormState.value.tjDate = firstRecord.maxTjTime.substring(0, 10)
           }
-          // 用当前页数据直接构建地市公司下拉选项（避免额外的 listApi 请求）
+          // 用当前页数据直接构建地市公司下拉选项（本地零请求兜底；完整集合由 distinctApi 提供）
           if (hasComnameSgs) {
             const set = new Set<string>()
             records.forEach((item: any) => {
@@ -198,23 +185,8 @@ export function useLaoxiaoTable(opts: UseLaoxiaoTableOptions) {
   }
 
   const handleRefresh = async () => {
-    if (hasComnameSgs) {
-      try {
-        const res = await opts.listApi({
-          current: 1,
-          size: 9999,
-          tjDate: tableApiParams.value.tjDate,
-          comnameSgs: ''
-        })
-        const rows = normalizeList(res)
-        if (rows.length) {
-          currentMaxTjTime.value = (rows[0] as any).maxTjTime || ''
-          collectComnameSgsOptions(rows)
-        }
-      } catch {
-        /* ignore */
-      }
-    }
+    // 下拉改为轻量去重端点刷新（不再全量拉表）
+    await buildComnameSgsOptions(tableApiParams.value.tjDate || '')
     refreshData()
   }
 

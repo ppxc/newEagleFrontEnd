@@ -125,7 +125,6 @@
     handleReset
   } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestRsGzlYearPage,
-    listApi: dataReport.axiosRequestRsGzlYear,
     hasComnameSgs: false,
     columnsFactory: () => [
       {

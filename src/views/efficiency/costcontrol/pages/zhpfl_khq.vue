@@ -74,7 +74,7 @@
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
   import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
-  import { dataReport } from '../../api'
+  import { dataReport, getDistinctComnames } from '../../api'
 
   defineOptions({ name: 'ZhpflKhqTable' })
 
@@ -148,19 +148,17 @@
   // ==================== 5. 构建下拉 (全量版) ====================
   // 用独立的全量端点（/list, size: 9999）构建市公司下拉，避免首屏分页只有 20 行时遗漏
   // 后续页中才出现的市公司。返回的集合是全量的，与分页结果无关。
-  const fetchAllForDropdown = async () => {
+  const fetchAllForDropdown = async (tjDate?: string) => {
     if (comOptions.value.length) return
     try {
-      const res = await dataReport.axiosRequestZhpflKhq({
-        current: 1,
-        size: 9999,
-        tjDate: tableApiParams.value.tjDate || '',
-        comnameSgs: tableApiParams.value.comnameSgs ?? ''
+      const res = await getDistinctComnames({
+        table: 'acd_zhpfl_khq',
+        tjDate: tjDate || tableApiParams.value.tjDate || ''
       })
-      if (Array.isArray(res) && res.length) {
+      if (Array.isArray(res)) {
         const set = new Set<string>()
-        res.forEach((item) => {
-          if (item.comnameSgs) set.add(item.comnameSgs)
+        res.forEach((name) => {
+          if (name) set.add(name)
         })
         comOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
         ElNotification({
@@ -174,19 +172,6 @@
     }
   }
 
-  const buildDeptOptions = (data: ZhpflKhqData[]) => {
-    if (comOptions.value.length) return
-    const comSet = new Set<string>()
-    data.forEach((item) => {
-      if (item.comnameSgs) comSet.add(item.comnameSgs)
-    })
-    comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-    ElNotification({
-      title: '提示',
-      message: `已加载：${comOptions.value.length} 个市公司`,
-      type: 'success'
-    })
-  }
 
   // ==================== 6. 表格 Hook ====================
   const {
@@ -267,14 +252,10 @@
 
   const handleRefresh = async () => {
     try {
-      const res = await dataReport.axiosRequestZhpflKhq({ current: 1, size: 9999 })
-      if (Array.isArray(res) && res.length) {
-        buildDeptOptions(res)
-        currentMaxTjTime.value = res[0].maxTjTime || ''
-      }
+      await fetchAllForDropdown()
       await fetchData()
     } catch {
-      await fetchData()
+      /* ignore */
     }
   }
 

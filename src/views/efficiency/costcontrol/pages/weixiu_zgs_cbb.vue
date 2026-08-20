@@ -36,7 +36,7 @@
   import { useEfficiencyTable } from '../../api/useEfficiencyTable'
 import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   import * as XLSX from 'xlsx'
-  import { repairShop } from '../../api'
+  import { repairShop, getDistinctComnames } from '../../api'
   defineOptions({ name: 'WeixiuZgsCbbTable' })
 
   interface Data {
@@ -63,12 +63,28 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
     { key: 'tjDate', label: '统计时间', type: 'date', span: 5, props: { placeholder: '选择统计时间', valueFormat: 'YYYY-MM-DD' } },
     { key: 'comnameSgs', label: '市公司', type: 'select', span: 5, props: { placeholder: '请选择市公司', options: comOptions.value, clearable: true } }
   ])
-  const buildDeptOptions = (data: Data[]) => {
+  const fetchAllForDropdown = async (tjDate?: string) => {
     if (comOptions.value.length) return
-    const comSet = new Set<string>()
-    data.forEach((item) => { if (item.comnameSgs) comSet.add(item.comnameSgs) })
-    comOptions.value = Array.from(comSet).map((name) => ({ label: name, value: name }))
-    ElNotification({ title: '提示', message: `已加载：${comOptions.value.length} 个市公司`, type: 'success' })
+    try {
+      const res = await getDistinctComnames({
+        table: 'acd_zgs_cbb',
+        tjDate: tjDate || tableApiParams.value.tjDate || ''
+      })
+      if (Array.isArray(res)) {
+        const set = new Set<string>()
+        res.forEach((name) => {
+          if (name) set.add(name)
+        })
+        comOptions.value = Array.from(set).map((name) => ({ label: name, value: name }))
+        ElNotification({
+          title: '提示',
+          message: `已加载：${comOptions.value.length} 个市公司`,
+          type: 'success'
+        })
+      }
+    } catch {
+      /* ignore */
+    }
   }
   const { data: tableData, loading, error: tableError, pagination, fetchData, refreshData, handleSizeChange, columns, columnChecks } = useEfficiencyTable({
     core: {
@@ -78,7 +94,7 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
         const page = (response ?? {}) as UseTableResult<Data>
         const records = page.records || []
         if (records.length) {
-          if (!isInitialized) { buildDeptOptions(records); isInitialized = true }
+          if (!isInitialized) { fetchAllForDropdown(); isInitialized = true }
           currentMaxTjTime.value = records[0].maxTjTime || ''
           if (!searchFormState.value.tjDate && records[0].maxTjTime) { searchFormState.value.tjDate = records[0].maxTjTime.substring(0, 10) }
         } else { currentMaxTjTime.value = '' }
@@ -99,7 +115,7 @@ import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   })
   const { mergedData, spanMethod } = useMergeFirstColumn(tableData, columns)
   const localHandleCurrentChange = (n: number) => { fetchData({ current: n }) }
-  const handleRefresh = async () => { try { const res = await repairShop.axiosRequestZgsCbb({ current: 1, size: 9999 }); if (Array.isArray(res) && res.length) { buildDeptOptions(res); currentMaxTjTime.value = res[0].maxTjTime || '' } await fetchData() } catch { await fetchData() } }
+  const handleRefresh = async () => { try { await fetchAllForDropdown(); await fetchData() } catch { await fetchData() } }
   const handleSearch = async () => { try { await searchBarRef.value?.validate(); tableApiParams.value = { ...tableApiParams.value, ...searchFormState.value }; refreshData() } catch {} }
   const handleReset = () => { Object.assign(searchFormState.value, DEFAULT_FORM); tableApiParams.value = { ...DEFAULT_PAGINATION, ...searchFormState.value }; refreshData() }
   const exportColumns = (item: Data, i: number) => ({

@@ -1,5 +1,20 @@
 import request from '@/utils/http'
 
+// ==================== 下拉去重端点（轻量级） ====================
+/**
+ * 取市公司（comname_sgs）去重名单，用于搜索表单下拉。
+ *
+ * 三态日期过滤（可组合）：
+ *   - 单日：{ tjDate }
+ *   - 区间：{ startDate, endDate }（如当日工作量 cur_gzl 系列）
+ *   - 共享表分段：{ flagValue }（jaflag）
+ *
+ * 返回 string[]（http 层已解包 Result.data）。
+ */
+export const getDistinctComnames = (params) => {
+  return request.get({ url: '/zyxt/api/distinct_comnames', params })
+}
+
 // ==================== 当日工作量统计 ====================
 export const dailyWorkload = {
   /**部门当日工作量 */

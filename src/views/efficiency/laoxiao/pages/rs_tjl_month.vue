@@ -145,7 +145,6 @@
     handleReset
   } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestRsTjlMonthPage,
-    listApi: dataReport.axiosRequestRsTjlMonth,
     hasComnameSgs: false,
     columnsFactory: () => [
       {

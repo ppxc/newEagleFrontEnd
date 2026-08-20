@@ -72,7 +72,7 @@
   import { Download } from '@element-plus/icons-vue'
   import { ElNotification } from 'element-plus'
   import * as XLSX from 'xlsx'
-  import { dataReport } from '../../api'
+  import { dataReport, getDistinctComnames } from '../../api'
   import { useLaoxiaoTable } from '../../api/useLaoxiaoTable'
   import { useMergeFirstColumn } from '../../api/useMergeFirstColumn'
   defineOptions({ name: 'LisuanYearTable' })
@@ -125,7 +125,7 @@
     handleReset
   } = useLaoxiaoTable({
     pageApi: dataReport.axiosRequestLisuanYearPage,
-    listApi: dataReport.axiosRequestLisuanYear,
+    distinctApi: (params) => getDistinctComnames({ table: 'acd_lisuan_year', ...params }),
     hasComnameSgs: true,
     columnsFactory: () => [
       {
